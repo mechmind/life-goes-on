@@ -51,8 +51,15 @@ func NormTowardCoord(src, dest UnitCoord) UnitCoord {
 	cx := toward.X
 	cy := toward.Y
 	norm := float32(math.Sqrt(float64(cx*cx + cy*cy)))
-	normToward := UnitCoord{fabs(float32(math.Sqrt(float64(cx * cx)))),
-		fabs(float32(math.Sqrt(float64(cy * cy))))}
+	normToward := UnitCoord{float32(math.Sqrt(float64(cx * cx))),
+		float32(math.Sqrt(float64(cy * cy)))}
+
+	if cx < 0 {
+		normToward.X = -normToward.X
+	}
+	if cy < 0 {
+		normToward.Y = -normToward.Y
+	}
 
 	if norm < FLOAT_ERROR {
 		return UnitCoord{0, 0}

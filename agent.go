@@ -5,20 +5,15 @@ import (
 )
 
 type Agent interface {
-	Ticker
 	AttachUnit(Unit)
 	DetachUnit(Unit)
 
-	HandleUnit(Unit, UnitCoord)
+	HandleUnit(*FieldView, Unit, UnitCoord)
 }
 
 type Squad struct {
-	units []*Soldier
+	units  []*Soldier
 	moveTo CellCoord
-}
-
-func (s *Squad) Tick(tick int64) {
-
 }
 
 func (s *Squad) AttachUnit(u Unit) {
@@ -29,14 +24,45 @@ func (s *Squad) DetachUnit(u Unit) {
 	// FIXME: implement
 }
 
-func (s *Squad) HandleUnit(u Unit, coord UnitCoord) {
-	// just move it to (100, 100)
-	dest := UnitCoord{100, 100}
-	fmt.Println("[agent] moving unit", u.(*Soldier).id, "from", coord, "toward", dest)
+func (s *Squad) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
+	// find nearby zed and move toward it
+	byDistance := f.UnitsByDistance(coord)
+	var zed UnitPresence
+	var zedFound bool
+	for id, u := range byDistance {
+		if _, ok := u.unit.(*Zed); ok {
+			zed = byDistance[id]
+			zedFound = true
+			break
+		}
+	}
+
+	if ! zedFound  {
+		// nothing to do
+		fmt.Println("[squad] no task for soldier", u.(*Soldier).id)
+		return
+	}
+
+	// chase toward zed
+	dest := zed.coord
 	to := u.MoveToward(coord, dest)
-	fmt.Println("[agent] moved unit", u.(*Soldier).id, "from", coord, "to", to)
+	fmt.Println("[squad] moved soldier", u.(*Soldier).id, "from", coord, "to", to)
 }
 
-type Swarm struct {
-	units []Unit
+type ZedSwarm struct {
+	units []*Zed
+}
+
+func (z *ZedSwarm) AttachUnit(u Unit) {
+	z.units = append(z.units, u.(*Zed))
+}
+
+func (z *ZedSwarm) DetachUnit(u Unit) {
+	// FIXME: implement
+}
+
+func (z *ZedSwarm) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
+	dest := UnitCoord{0, 100}
+	to := u.MoveToward(coord, dest)
+	fmt.Println("[swarm] moved zed", u.(*Zed).id, "from", coord, "to", to)
 }

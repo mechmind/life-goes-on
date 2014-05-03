@@ -21,12 +21,13 @@ func NewField(xSize, ySize int) *Field {
 
 func (f *Field) Tick(tick int64) {
 	fmt.Println("[field] tick")
-	for _, agent := range f.agents {
-		agent.Tick(tick)
-	}
+	//for _, agent := range f.agents {
+	//	agent.Tick(tick)
+	//}
 
+	view := &FieldView{f}
 	for _, up := range f.units {
-		up.agent.HandleUnit(up.unit, up.coord)
+		up.agent.HandleUnit(view, up.unit, up.coord)
 	}
 }
 

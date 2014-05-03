@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	//"fmt"
 )
 
 type Unit interface {
@@ -25,8 +25,8 @@ func (w *Walker) MoveToward(f *Field, src, dest UnitCoord) UnitCoord {
 	currentCell := f.CellAt(src.Cell())
 	nextCell := f.CellAt(nextCellCoord)
 
-	fmt.Printf("[unit] moving from %s toward %s: toward=%s, next cell=%s\n", src, dest,
-		toward, nextCellCoord)
+	//fmt.Printf("[unit] moving from %s toward %s: toward=%s, next cell=%s\n", src, dest,
+	//	toward, nextCellCoord)
 	var speed float32
 	switch {
 	case currentCell.elevation == nextCell.elevation:
@@ -54,9 +54,25 @@ type Possesser struct {
 	Limit int
 }
 
+type Chaser struct {
+	target int
+}
+
+func (c *Chaser) LockOn(target int) {
+	c.target = target
+}
+
+func (c *Chaser) Target() int {
+	return c.target
+}
+
+type Gunner struct{}
+
 type Soldier struct {
 	Walker
 	Possesser
+	Chaser
+	Gunner
 	field *Field
 	id    int
 }
@@ -72,6 +88,7 @@ func (s *Soldier) SetID(id int) {
 
 type Zed struct {
 	Walker
+	Chaser
 	field *Field
 	id int
 }
