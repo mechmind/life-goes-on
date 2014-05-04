@@ -1,16 +1,21 @@
 package main
 
 import (
-	//"fmt"
+	"fmt"
 )
 
 type Unit interface {
 	SetID(int)
 	Mover
+	DamageReciever
 }
 
 type Mover interface {
 	MoveToward(src, dest UnitCoord) UnitCoord
+}
+
+type DamageReciever interface {
+	RecieveDamage(dmg float32)
 }
 
 type Walker struct {
@@ -66,7 +71,14 @@ func (c *Chaser) Target() int {
 	return c.target
 }
 
-type Gunner struct{}
+type Gunner struct{
+	fireRange float32
+	gunDamage float32
+}
+
+func (g Gunner) CanShoot(src, dest UnitCoord) bool {
+	return src.Distance(dest) < g.fireRange
+}
 
 type Soldier struct {
 	Walker
@@ -75,6 +87,11 @@ type Soldier struct {
 	Gunner
 	field *Field
 	id    int
+	health float32
+}
+
+func (s *Soldier) SetID(id int) {
+	s.id = id
 }
 
 func (s *Soldier) MoveToward(src, dest UnitCoord) UnitCoord {
@@ -82,8 +99,13 @@ func (s *Soldier) MoveToward(src, dest UnitCoord) UnitCoord {
 	return s.field.MoveMe(s.id, nextCoord)
 }
 
-func (s *Soldier) SetID(id int) {
-	s.id = id
+func (s *Soldier) RecieveDamage(dmg float32) {
+	s.health -= dmg
+}
+
+func (s *Soldier) Shoot(src, dest UnitCoord, victim Unit) {
+	// TODO: calculate hit probability based on distance
+	victim.RecieveDamage(s.Gunner.gunDamage)
 }
 
 type Zed struct {
@@ -91,6 +113,11 @@ type Zed struct {
 	Chaser
 	field *Field
 	id int
+	health float32
+}
+
+func (z *Zed) SetID(id int) {
+	z.id = id
 }
 
 func (z *Zed) MoveToward(src, dest UnitCoord) UnitCoord {
@@ -98,6 +125,7 @@ func (z *Zed) MoveToward(src, dest UnitCoord) UnitCoord {
 	return z.field.MoveMe(z.id, nextCoord)
 }
 
-func (z *Zed) SetID(id int) {
-	z.id = id
+func (z *Zed) RecieveDamage(dmg float32) {
+	z.health -= dmg
+	fmt.Println("[zed] ARRRGH i got hit and have", z.health, "health")
 }

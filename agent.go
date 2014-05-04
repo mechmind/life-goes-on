@@ -45,8 +45,15 @@ func (s *Squad) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
 
 	// chase toward zed
 	dest := zed.coord
-	to := u.MoveToward(coord, dest)
-	fmt.Println("[squad] moved soldier", u.(*Soldier).id, "from", coord, "to", to)
+	soldier := u.(*Soldier)
+	if soldier.CanShoot(coord, dest) {
+		soldier.Shoot(coord, dest, zed.unit)
+		fmt.Println("[squad] soldier", u.(*Soldier).id, "shoot at zed", zed.unit.(*Zed).id,
+			"at", dest)
+	} else {
+		to := u.MoveToward(coord, dest)
+		fmt.Println("[squad] moved soldier", u.(*Soldier).id, "from", coord, "to", to)
+	}
 }
 
 type ZedSwarm struct {
