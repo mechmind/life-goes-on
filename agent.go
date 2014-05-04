@@ -2,7 +2,10 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
 )
+
+const DAMSEL_WANDER_RADIUS = 40
 
 type Agent interface {
 	AttachUnit(Unit)
@@ -69,9 +72,87 @@ func (z *ZedSwarm) DetachUnit(u Unit) {
 }
 
 func (z *ZedSwarm) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
-	dest := UnitCoord{0, 100}
-	to := u.MoveToward(coord, dest)
-	fmt.Println("[swarm] moved zed", u.(*Zed).id, "from", coord, "to", to)
+	zed := u.(*Zed)
+	if zed.lastAttacker >= 0 {
+		// fight back
+		attackerCoord, attacker := f.UnitByID(zed.lastAttacker)
+		if zed.CanBite(coord, attackerCoord) {
+			fmt.Println("[swarm] biting", attacker.GetID())
+			zed.Bite(coord, attackerCoord, attacker)
+			_, attacker = f.UnitByID(zed.lastAttacker);
+			if _, ok := attacker.(*Corpse); ok {
+				// bitten to death
+				zed.lastAttacker = -1
+			}
+		} else {
+			zed.MoveToward(coord, attackerCoord)
+			fmt.Println("[swarm] moved zed", u.(*Zed).id, "from", coord,
+				"to attacker at", attackerCoord)
+		}
+	} else {
+		// find nearby human and attack it
+		byDistance := f.UnitsByDistance(coord)
+		var nonzed UnitPresence
+		var nonzedFound bool
+		for id, u := range byDistance {
+			if _, ok := u.unit.(*Zed); !ok {
+				if _, ok := u.unit.(*Corpse); !ok {
+					nonzed = byDistance[id]
+					nonzedFound = true
+					break
+				}
+			}
+		}
+
+		if ! nonzedFound  {
+			// nothing to do
+			fmt.Println("[swarm] no humans for zed", u.(*Soldier).id)
+			return
+		}
+
+		// chase toward nonzed
+		dest := nonzed.coord
+		if zed.CanBite(coord, dest) {
+			fmt.Println("[swarm] biting", u.GetID())
+			zed.Bite(coord, dest, nonzed.unit)
+		} else {
+			zed.MoveToward(coord, dest)
+			fmt.Println("[swarm] moved zed", zed.id, "from", coord, "to target at", dest)
+		}
+	}
+}
+
+type DamselCrowd struct {
+	units []*Damsel
+}
+
+func (d *DamselCrowd) AttachUnit(u Unit) {
+	d.units = append(d.units, u.(*Damsel))
+}
+
+func (d *DamselCrowd) DetachUnit(u Unit) {
+	// FIXME: implement
+}
+
+func (d *DamselCrowd) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
+	dam := u.(*Damsel)
+	if dam.lastAttacker >= 0 {
+		// flee away
+		attackerCoord, _ := f.UnitByID(dam.lastAttacker)
+		to := dam.MoveAway(coord, attackerCoord)
+		fmt.Println("[dam] fleeing dam", dam.id, "from", coord, "to", to)
+	} else {
+		if dam.wanderTarget == coord {
+			// wander around
+			rx := fbound(rand.Float32() * DAMSEL_WANDER_RADIUS - DAMSEL_WANDER_RADIUS/2, 0, 1024)
+			ry := fbound(rand.Float32() * DAMSEL_WANDER_RADIUS - DAMSEL_WANDER_RADIUS/2, 0, 1024)
+			dest := coord.Add(rx, ry)
+			dam.wanderTarget = dest
+			fmt.Println("[dam] selected wandering target for", dam.id, "to", dest)
+		}
+		dam.MoveToward(coord, dam.wanderTarget)
+		fmt.Println("[dam] moved dam", dam.id, "from", coord, "to", dam.wanderTarget)
+	}
 }
 
 type NopAgent struct{}

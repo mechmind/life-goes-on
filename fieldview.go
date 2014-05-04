@@ -16,6 +16,10 @@ func (f *FieldView) UnitsByDistance(src UnitCoord) []UnitPresence {
 	return sorter.units
 }
 
+func (f *FieldView) UnitByID(id int) (UnitCoord, Unit) {
+	return f.field.units[id].coord, f.field.units[id].unit
+}
+
 // unitsByDistance used to sort units on field, nearest to src first
 type unitsByDistance struct {
 	src UnitCoord

@@ -58,7 +58,9 @@ func (f *Field) MoveMe(id int, coord UnitCoord) UnitCoord {
 func (f *Field) KillMe(id int) {
 	// kill unit
 	f.units[id].agent.DetachUnit(f.units[id].unit)
-	f.units[id] = UnitPresence{coord: f.units[id].coord, agent: nopAgent, unit: nil}
+	unit := f.units[id].unit
+	f.units[id] = UnitPresence{coord: f.units[id].coord, agent: nopAgent,
+		unit: &Corpse{f, id, unit}}
 }
 
 type UnitPresence struct {

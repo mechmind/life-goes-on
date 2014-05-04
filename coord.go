@@ -5,12 +5,6 @@ import (
 	"math"
 )
 
-func fabs(f float32) float32 {
-	if f < 0 {
-		return -f
-	}
-	return f
-}
 
 type UnitCoord struct {
 	X, Y float32
