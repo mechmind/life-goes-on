@@ -72,7 +72,21 @@ func (z *ZedSwarm) DetachUnit(u Unit) {
 }
 
 func (z *ZedSwarm) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
-	zed := u.(*Zed)
+	var zed *Zed
+	switch u.(type) {
+	case *Zed:
+		zed = u.(*Zed)
+	case *Corpse:
+		corpse := u.(*Corpse)
+		corpse.ressurectCounter--
+		if corpse.ressurectCounter == 0 {
+			// respawn corpse as fresh new zed
+			f.ReplaceUnit(corpse.id, z, corpse.Respawn())
+		}
+		return
+	}
+
+	zed.Digest()
 	if zed.lastAttacker >= 0 {
 		// fight back
 		attackerCoord, attacker := f.UnitByID(zed.lastAttacker)
@@ -80,14 +94,24 @@ func (z *ZedSwarm) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
 			fmt.Println("[swarm] biting", attacker.GetID())
 			zed.Bite(coord, attackerCoord, attacker)
 			_, attacker = f.UnitByID(zed.lastAttacker);
-			if _, ok := attacker.(*Corpse); ok {
-				// bitten to death
+			if corpse, ok := attacker.(*Corpse); ok {
+				// foe is bitten to death
 				zed.lastAttacker = -1
+				if zed.nutrition > ZED_NUTRITION_FULL {
+					// infect corpse
+					corpse.ressurectCounter = CORPSE_RESSURECT_TICKS
+					// regain control over it
+					f.Reown(corpse.id, z)
+					zed.Eat(ZED_INFECT_NUTRITION)
+				} else {
+					// eat it
+					zed.Eat(ZED_EAT_NUTRITION)
+				}
 			}
 		} else {
 			zed.MoveToward(coord, attackerCoord)
-			fmt.Println("[swarm] moved zed", u.(*Zed).id, "from", coord,
-				"to attacker at", attackerCoord)
+			fmt.Println("[swarm] moved zed", u.(*Zed).id, coord,
+				"==>", attackerCoord)
 		}
 	} else {
 		// find nearby human and attack it
@@ -106,7 +130,7 @@ func (z *ZedSwarm) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
 
 		if ! nonzedFound  {
 			// nothing to do
-			fmt.Println("[swarm] no humans for zed", u.(*Soldier).id)
+			fmt.Println("[swarm] no humans for zed", zed.id)
 			return
 		}
 
@@ -115,9 +139,24 @@ func (z *ZedSwarm) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
 		if zed.CanBite(coord, dest) {
 			fmt.Println("[swarm] biting", u.GetID())
 			zed.Bite(coord, dest, nonzed.unit)
+			_, victim := f.UnitByID(nonzed.unit.GetID())
+			if corpse, ok := victim.(*Corpse); ok {
+				// victim is bitten to death, eat it
+				if zed.nutrition > ZED_NUTRITION_FULL {
+					// infect corpse
+					corpse.ressurectCounter = CORPSE_RESSURECT_TICKS
+					// regain control over it
+					f.Reown(corpse.id, z)
+					zed.Eat(ZED_INFECT_NUTRITION)
+				} else {
+					// eat it
+					zed.Eat(ZED_EAT_NUTRITION)
+				}
+			}
 		} else {
 			zed.MoveToward(coord, dest)
-			fmt.Println("[swarm] moved zed", zed.id, "from", coord, "to target at", dest)
+			fmt.Println("[swarm] moved zed", zed.id, coord, "->", dest, "n:", zed.nutrition,
+				"r:", zed.rage, "s:", zed.Walker.WalkSpeed, "h:", zed.health)
 		}
 	}
 }
@@ -148,10 +187,10 @@ func (d *DamselCrowd) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
 			ry := fbound(rand.Float32() * DAMSEL_WANDER_RADIUS - DAMSEL_WANDER_RADIUS/2, 0, 1024)
 			dest := coord.Add(rx, ry)
 			dam.wanderTarget = dest
-			fmt.Println("[dam] selected wandering target for", dam.id, "to", dest)
+			//fmt.Println("[dam] selected wandering target for", dam.id, "to", dest)
 		}
 		dam.MoveToward(coord, dam.wanderTarget)
-		fmt.Println("[dam] moved dam", dam.id, "from", coord, "to", dam.wanderTarget)
+		//fmt.Println("[dam] moved dam", dam.id, "from", coord, "to", dam.wanderTarget)
 	}
 }
 

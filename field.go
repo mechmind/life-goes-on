@@ -35,13 +35,20 @@ func (f *Field) Tick(tick int64) {
 
 func (f *Field) PlaceUnit(c UnitCoord, agent Agent, u Unit) error {
 	f.units = append(f.units, UnitPresence{c, agent, u})
-	f.units[len(f.units)-1].unit.SetID(len(f.units)-1)
+	u.SetID(len(f.units)-1)
 	agent.AttachUnit(u)
 	return nil
 }
 
 func (f *Field) PlaceAgent(a Agent) error {
 	f.agents = append(f.agents, a)
+	return nil
+}
+
+func (f *Field) ReplaceUnit(id int, c UnitCoord, agent Agent, u Unit) error {
+	f.units[id] = UnitPresence{c, agent, u}
+	u.SetID(id)
+	agent.AttachUnit(u)
 	return nil
 }
 
@@ -60,7 +67,7 @@ func (f *Field) KillMe(id int) {
 	f.units[id].agent.DetachUnit(f.units[id].unit)
 	unit := f.units[id].unit
 	f.units[id] = UnitPresence{coord: f.units[id].coord, agent: nopAgent,
-		unit: &Corpse{f, id, unit}}
+		unit: &Corpse{f, id, unit, 0}}
 }
 
 type UnitPresence struct {

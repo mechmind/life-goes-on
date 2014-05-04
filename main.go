@@ -19,10 +19,8 @@ func main() {
 	field.PlaceUnit(UnitCoord{2, 1}, mainSquad, sold2)
 
 	var swarm Agent = &ZedSwarm{}
-	var zed1 = &Zed{Walker: Walker{0.40, 0.02, 0.20}, Biter: Biter{biteDamage: 40},
-		lastAttacker: -1, health: 140, field: field}
-	var zed2 = new(Zed)
-	*zed2 = *zed1 // copy zed
+	var zed1 = NewZed(field)
+	var zed2 = NewZed(field)
 
 	field.PlaceAgent(swarm)
 	field.PlaceUnit(UnitCoord{15, 15}, swarm, zed1)
