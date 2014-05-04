@@ -86,7 +86,11 @@ func (z *ZedSwarm) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
 		return
 	}
 
-	zed.Digest()
+	if ! zed.Digest() {
+		// starved
+		return
+	}
+
 	if zed.lastAttacker >= 0 {
 		// fight back
 		attackerCoord, attacker := f.UnitByID(zed.lastAttacker)

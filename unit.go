@@ -246,7 +246,7 @@ func (z *Zed) Eat(food float32) {
 	z.nutrition += food
 }
 
-func (z *Zed) Digest() {
+func (z *Zed) Digest() bool {
 	// calm down
 	z.rage -= z.rage * ZED_RAGE_COOLING
 	if z.rage < ZED_RAGE_THRESHOLD {
@@ -261,6 +261,14 @@ func (z *Zed) Digest() {
 		z.nutrition -= ZED_NUTRITION_TO_HP_PORTION
 		z.health += ZED_NUTRITION_TO_HP_PORTION * ZED_NUTRITION_TO_HP_SCALE
 	}
+
+	if z.nutrition < 0 {
+		// starve to death
+		fmt.Println("[zed] im starved to death")
+		z.field.KillMe(z.id)
+		return false
+	}
+	return true
 }
 
 type Damsel struct {
