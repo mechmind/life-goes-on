@@ -47,9 +47,9 @@ func (s *Squad) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
 	dest := zed.coord
 	soldier := u.(*Soldier)
 	if soldier.CanShoot(coord, dest) {
-		soldier.Shoot(coord, dest, zed.unit)
-		fmt.Println("[squad] soldier", u.(*Soldier).id, "shoot at zed", zed.unit.(*Zed).id,
+		fmt.Println("[squad] soldier", u.(*Soldier).id, "shooting at zed", zed.unit.(*Zed).id,
 			"at", dest)
+		soldier.Shoot(coord, dest, zed.unit)
 	} else {
 		to := u.MoveToward(coord, dest)
 		fmt.Println("[squad] moved soldier", u.(*Soldier).id, "from", coord, "to", to)
@@ -73,3 +73,9 @@ func (z *ZedSwarm) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
 	to := u.MoveToward(coord, dest)
 	fmt.Println("[swarm] moved zed", u.(*Zed).id, "from", coord, "to", to)
 }
+
+type NopAgent struct{}
+
+func (n NopAgent) AttachUnit(u Unit) {}
+func (n NopAgent) DetachUnit(u Unit) {}
+func (n NopAgent) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {}

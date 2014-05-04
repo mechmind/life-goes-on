@@ -8,6 +8,8 @@ const (
 	FLOAT_ERROR = 0.000001
 )
 
+var nopAgent NopAgent
+
 type Field struct {
 	xSize, ySize int
 	cells        []Cell
@@ -51,6 +53,12 @@ func (f *Field) CellAt(c CellCoord) *Cell {
 func (f *Field) MoveMe(id int, coord UnitCoord) UnitCoord {
 	f.units[id].coord = coord
 	return coord
+}
+
+func (f *Field) KillMe(id int) {
+	// kill unit
+	f.units[id].agent.DetachUnit(f.units[id].unit)
+	f.units[id] = UnitPresence{coord: f.units[id].coord, agent: nopAgent, unit: nil}
 }
 
 type UnitPresence struct {

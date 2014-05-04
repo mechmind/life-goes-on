@@ -128,4 +128,8 @@ func (z *Zed) MoveToward(src, dest UnitCoord) UnitCoord {
 func (z *Zed) RecieveDamage(dmg float32) {
 	z.health -= dmg
 	fmt.Println("[zed] ARRRGH i got hit and have", z.health, "health")
+	if z.health < 0 {
+		fmt.Println("[zed] im dead")
+		z.field.KillMe(z.id)
+	}
 }
