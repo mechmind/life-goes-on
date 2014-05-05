@@ -2,9 +2,12 @@ package main
 
 import (
 	"math/rand"
+	"time"
 )
 
 func main() {
+	// seed random
+	rand.Seed(time.Now().Unix())
 	updates := make(chan *Field)
 	field := NewField(1024, 1024, updates)
 	time := NewTime(10, field)
