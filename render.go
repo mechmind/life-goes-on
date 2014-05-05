@@ -71,13 +71,13 @@ func RunTUI(updates chan *Field) {
 				// move view up
 				case ev.Ch == 'j':
 					fallthrough
-				case ev.Key == termbox.KeyArrowUp:
+				case ev.Key == termbox.KeyArrowDown:
 					currentPos = currentPos.Add(0, 1)
 
 				// move view down
 				case ev.Ch == 'k':
 					fallthrough
-				case ev.Key == termbox.KeyArrowDown:
+				case ev.Key == termbox.KeyArrowUp:
 					currentPos = currentPos.Add(0, -1)
 
 				// quit
