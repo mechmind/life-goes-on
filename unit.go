@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+//	"fmt"
 )
 
 const (
@@ -171,9 +171,9 @@ func (s *Soldier) MoveToward(src, dest UnitCoord) UnitCoord {
 
 func (s *Soldier) RecieveDamage(from int, dmg float32) {
 	s.health -= dmg
-	fmt.Println("[squad] FUCK i got hit and have", s.health, "health")
+	//fmt.Println("[squad] FUCK i got hit and have", s.health, "health")
 	if s.health < 0 {
-		fmt.Println("[squad] im dead")
+		//fmt.Println("[squad] im dead")
 		s.field.KillMe(s.id)
 	}
 	s.health -= dmg
@@ -235,9 +235,9 @@ func (z *Zed) RecieveDamage(from int, dmg float32) {
 	z.health -= dmg
 	z.rage += dmg * ZED_RAGE_FROM_DAMAGE
 	z.lastAttacker = from
-	fmt.Println("[zed] ARRRGH i got hit and have", z.health, "health")
+	//fmt.Println("[zed] ARRRGH i got hit and have", z.health, "health")
 	if z.health < 0 {
-		fmt.Println("[zed] im finally dead")
+		//fmt.Println("[zed] im finally dead")
 		z.field.KillMe(z.id)
 	}
 }
@@ -264,7 +264,7 @@ func (z *Zed) Digest() bool {
 
 	if z.nutrition < 0 {
 		// starve to death
-		fmt.Println("[zed] im starved to death")
+		//fmt.Println("[zed] im starved to death")
 		z.field.KillMe(z.id)
 		return false
 	}
@@ -301,9 +301,9 @@ func (d *Damsel) MoveAway(src, dest UnitCoord) UnitCoord {
 func (d *Damsel) RecieveDamage(from int, dmg float32) {
 	d.health -= dmg
 	d.lastAttacker = from
-	fmt.Println("[dam] :( :( i got hit and have", d.health, "health")
+	//fmt.Println("[dam] :( :( i got hit and have", d.health, "health")
 	if d.health < 0 {
-		fmt.Println("[dam] im dead :'(")
+		//fmt.Println("[dam] im dead :'(")
 		d.field.KillMe(d.id)
 	}
 }

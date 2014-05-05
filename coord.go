@@ -127,3 +127,12 @@ func (c CellCoord) Unit() UnitCoord {
 func (c CellCoord) UnitCenter() UnitCoord {
 	return UnitCoord{float32(c.X) + 0.5, float32(c.Y) + 0.5}
 }
+
+func CheckCellCoordBounds(value, low, high CellCoord) bool {
+	if low.X <= value.X && value.X <= high.X &&
+		low.Y <= value.Y && value.Y <= high.Y {
+
+		return true
+	}
+	return false
+}

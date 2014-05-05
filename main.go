@@ -5,7 +5,8 @@ import (
 )
 
 func main() {
-	field := NewField(1024, 1024)
+	updates := make(chan *Field)
+	field := NewField(1024, 1024, updates)
 	time := NewTime(10, field)
 
 	var mainSquad Agent = &Squad{}
@@ -36,5 +37,6 @@ func main() {
 		field.PlaceUnit(dam.wanderTarget, crowd, dam)
 	}
 
-	time.Run()
+	go time.Run()
+	RunTUI(updates)
 }

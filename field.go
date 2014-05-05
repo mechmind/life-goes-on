@@ -1,28 +1,48 @@
 package main
 
 import (
-	"fmt"
+	//"fmt"
 )
 
 const (
 	FLOAT_ERROR = 0.000001
+	FIELD_BACKBUFFER_SIZE = 3
 )
 
 var nopAgent NopAgent
+
+var fieldBackbuffer = make(chan *Field, FIELD_BACKBUFFER_SIZE)
 
 type Field struct {
 	xSize, ySize int
 	cells        []Cell
 	agents       []Agent
 	units        []UnitPresence
+	updates      chan *Field
 }
 
-func NewField(xSize, ySize int) *Field {
-	return &Field{xSize, ySize, make([]Cell, xSize*ySize), nil, nil}
+func NewField(xSize, ySize int, updates chan *Field) *Field {
+	return &Field{xSize, ySize, make([]Cell, xSize*ySize), nil, nil, updates}
+}
+
+func copyField(f *Field) *Field {
+	var bb *Field
+	select {
+	case bb = <-fieldBackbuffer:
+	default:
+		bb = &Field{f.xSize, f.ySize, make([]Cell, f.xSize*f.ySize), nil, nil, nil}
+	}
+
+	copy(bb.cells, f.cells)
+	bb.units = append(bb.units[:0], f.units...)
+	bb.agents = append(bb.agents[:0], f.agents...)
+	bb.updates = fieldBackbuffer
+
+	return bb
 }
 
 func (f *Field) Tick(tick int64) {
-	fmt.Println("[field] tick")
+	//fmt.Println("[field] tick")
 	//for _, agent := range f.agents {
 	//	agent.Tick(tick)
 	//}
@@ -31,11 +51,16 @@ func (f *Field) Tick(tick int64) {
 	for _, up := range f.units {
 		up.agent.HandleUnit(view, up.unit, up.coord)
 	}
+
+	select {
+	case f.updates <- copyField(f):
+	default:
+	}
 }
 
 func (f *Field) PlaceUnit(c UnitCoord, agent Agent, u Unit) error {
 	f.units = append(f.units, UnitPresence{c, agent, u})
-	u.SetID(len(f.units)-1)
+	u.SetID(len(f.units) - 1)
 	agent.AttachUnit(u)
 	return nil
 }
