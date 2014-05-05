@@ -1,11 +1,11 @@
 package main
 
 import (
-	//"fmt"
+//"fmt"
 )
 
 const (
-	FLOAT_ERROR = 0.000001
+	FLOAT_ERROR           = 0.000001
 	FIELD_BACKBUFFER_SIZE = 3
 )
 

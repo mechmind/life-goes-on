@@ -1,6 +1,5 @@
 package main
 
-
 func fabs(f float32) float32 {
 	if f < 0 {
 		return -f

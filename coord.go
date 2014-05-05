@@ -5,7 +5,6 @@ import (
 	"math"
 )
 
-
 type UnitCoord struct {
 	X, Y float32
 }

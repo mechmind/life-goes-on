@@ -5,30 +5,29 @@ import (
 )
 
 const (
-	ZED_NUTRITION_WALKING = 1
-	ZED_NUTRITION_BITING = 0.35
-	ZED_RAGE_FROM_DAMAGE = 1
-	ZED_RAGE_COOLING = 0.03
-	ZED_RAGE_THRESHOLD = 3
-	ZED_RAGE_COST = 0.1
-	ZED_RAGE_SPEEDUP = 0.05
-	ZED_RAGE_BITEUP = 0.3
-	ZED_NUTRITION_TO_HP_PORTION = 5
+	ZED_NUTRITION_WALKING         = 1
+	ZED_NUTRITION_BITING          = 0.35
+	ZED_RAGE_FROM_DAMAGE          = 1
+	ZED_RAGE_COOLING              = 0.03
+	ZED_RAGE_THRESHOLD            = 3
+	ZED_RAGE_COST                 = 0.1
+	ZED_RAGE_SPEEDUP              = 0.05
+	ZED_RAGE_BITEUP               = 0.3
+	ZED_NUTRITION_TO_HP_PORTION   = 5
 	ZED_NUTRITION_TO_HP_THRESHOLD = 1200
-	ZED_NUTRITION_TO_HP_SCALE = 0.02
-	ZED_NUTRITION_FULL = 1600
-	ZED_MOVER_WALK = 0.5
-	ZED_MOVER_WALKUP = 0.3
-	ZED_MOVER_WALKDOWN = 0.6
-	ZED_EAT_NUTRITION = 350
-	ZED_INFECT_NUTRITION = 50
-	ZED_BITE_DAMAGE = 40
-	ZED_HEALTH = 140
-	ZED_NUTRITION_BASE = 1000
+	ZED_NUTRITION_TO_HP_SCALE     = 0.02
+	ZED_NUTRITION_FULL            = 1600
+	ZED_MOVER_WALK                = 0.5
+	ZED_MOVER_WALKUP              = 0.3
+	ZED_MOVER_WALKDOWN            = 0.6
+	ZED_EAT_NUTRITION             = 350
+	ZED_INFECT_NUTRITION          = 50
+	ZED_BITE_DAMAGE               = 40
+	ZED_HEALTH                    = 140
+	ZED_NUTRITION_BASE            = 1000
 
 	CORPSE_RESSURECT_TICKS = 30
 )
-
 
 type Unit interface {
 	SetID(int)
@@ -129,7 +128,7 @@ func (c *Chaser) Target() int {
 	return c.target
 }
 
-type Gunner struct{
+type Gunner struct {
 	fireRange float32
 	gunDamage float32
 }
@@ -151,8 +150,8 @@ type Soldier struct {
 	Possesser
 	Chaser
 	Gunner
-	field *Field
-	id    int
+	field  *Field
+	id     int
 	health float32
 }
 
@@ -186,15 +185,15 @@ func (s *Soldier) Shoot(src, dest UnitCoord, victim Unit) {
 
 type Zed struct {
 	field *Field
-	id int
+	id    int
 
 	Walker
 	Chaser
 	Biter
-	health float32
+	health       float32
 	lastAttacker int
 
-	rage float32
+	rage      float32
 	nutrition float32
 }
 
@@ -216,16 +215,16 @@ func (z *Zed) MoveToward(src, dest UnitCoord) UnitCoord {
 	nutr_coeff := z.nutrition / 1000
 	rage_coeff := z.rage * ZED_RAGE_SPEEDUP
 	all_coeff := nutr_coeff + rage_coeff
-	z.Walker = Walker{fbound(ZED_MOVER_WALK * all_coeff, 0, 1),
-		fbound(ZED_MOVER_WALKUP * all_coeff, 0, 1),
-		fbound(ZED_MOVER_WALKDOWN * all_coeff, 0, 1)}
+	z.Walker = Walker{fbound(ZED_MOVER_WALK*all_coeff, 0, 1),
+		fbound(ZED_MOVER_WALKUP*all_coeff, 0, 1),
+		fbound(ZED_MOVER_WALKDOWN*all_coeff, 0, 1)}
 	nextCoord := z.Walker.MoveToward(z.field, src, dest)
 	z.nutrition -= src.Distance(nextCoord) * ZED_NUTRITION_WALKING
 	return z.field.MoveMe(z.id, nextCoord)
 }
 
 func (z *Zed) Bite(src, dest UnitCoord, victim Unit) {
-	damage := z.Biter.biteDamage + z.rage * ZED_RAGE_BITEUP
+	damage := z.Biter.biteDamage + z.rage*ZED_RAGE_BITEUP
 	z.nutrition -= damage * ZED_NUTRITION_BITING
 
 	victim.RecieveDamage(z.id, z.Biter.biteDamage)
@@ -273,9 +272,9 @@ func (z *Zed) Digest() bool {
 
 type Damsel struct {
 	Walker
-	field *Field
-	id int
-	health float32
+	field        *Field
+	id           int
+	health       float32
 	lastAttacker int
 	wanderTarget UnitCoord
 }
@@ -310,9 +309,9 @@ func (d *Damsel) RecieveDamage(from int, dmg float32) {
 
 // temporary implement corpse as unit
 type Corpse struct {
-	field *Field
-	id int
-	unit Unit
+	field            *Field
+	id               int
+	unit             Unit
 	ressurectCounter int
 }
 

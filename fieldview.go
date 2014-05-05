@@ -31,7 +31,7 @@ func (f *FieldView) ReplaceUnit(id int, agent Agent, u Unit) {
 
 // unitsByDistance used to sort units on field, nearest to src first
 type unitsByDistance struct {
-	src UnitCoord
+	src   UnitCoord
 	units []UnitPresence
 }
 

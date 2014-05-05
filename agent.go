@@ -40,7 +40,7 @@ func (s *Squad) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
 		}
 	}
 
-	if ! zedFound  {
+	if !zedFound {
 		// nothing to do
 		//fmt.Println("[squad] no task for soldier", u.(*Soldier).id)
 		return
@@ -86,7 +86,7 @@ func (z *ZedSwarm) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
 		return
 	}
 
-	if ! zed.Digest() {
+	if !zed.Digest() {
 		// starved
 		return
 	}
@@ -97,7 +97,7 @@ func (z *ZedSwarm) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
 		if zed.CanBite(coord, attackerCoord) {
 			//fmt.Println("[swarm] biting", attacker.GetID())
 			zed.Bite(coord, attackerCoord, attacker)
-			_, attacker = f.UnitByID(zed.lastAttacker);
+			_, attacker = f.UnitByID(zed.lastAttacker)
 			if corpse, ok := attacker.(*Corpse); ok {
 				// foe is bitten to death
 				zed.lastAttacker = -1
@@ -132,7 +132,7 @@ func (z *ZedSwarm) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
 			}
 		}
 
-		if ! nonzedFound  {
+		if !nonzedFound {
 			// nothing to do
 			//fmt.Println("[swarm] no humans for zed", zed.id)
 			return
@@ -160,7 +160,7 @@ func (z *ZedSwarm) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
 		} else {
 			zed.MoveToward(coord, dest)
 			//fmt.Println("[swarm] moved zed", zed.id, coord, "->", dest, "n:", zed.nutrition,
-				//"r:", zed.rage, "s:", zed.Walker.WalkSpeed, "h:", zed.health)
+			//"r:", zed.rage, "s:", zed.Walker.WalkSpeed, "h:", zed.health)
 		}
 	}
 }
@@ -187,8 +187,8 @@ func (d *DamselCrowd) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
 	} else {
 		if dam.wanderTarget == coord {
 			// wander around
-			rx := fbound(rand.Float32() * DAMSEL_WANDER_RADIUS - DAMSEL_WANDER_RADIUS/2, 0, 1024)
-			ry := fbound(rand.Float32() * DAMSEL_WANDER_RADIUS - DAMSEL_WANDER_RADIUS/2, 0, 1024)
+			rx := fbound(rand.Float32()*DAMSEL_WANDER_RADIUS-DAMSEL_WANDER_RADIUS/2, 0, 1024)
+			ry := fbound(rand.Float32()*DAMSEL_WANDER_RADIUS-DAMSEL_WANDER_RADIUS/2, 0, 1024)
 			dest := coord.Add(rx, ry)
 			dam.wanderTarget = dest
 			//fmt.Println("[dam] selected wandering target for", dam.id, "to", dest)
@@ -200,6 +200,6 @@ func (d *DamselCrowd) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
 
 type NopAgent struct{}
 
-func (n NopAgent) AttachUnit(u Unit) {}
-func (n NopAgent) DetachUnit(u Unit) {}
+func (n NopAgent) AttachUnit(u Unit)                                {}
+func (n NopAgent) DetachUnit(u Unit)                                {}
 func (n NopAgent) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {}
