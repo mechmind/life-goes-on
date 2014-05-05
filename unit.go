@@ -26,6 +26,13 @@ const (
 	ZED_HEALTH                    = 140
 	ZED_NUTRITION_BASE            = 1000
 
+	SOL_MOVER_WALK     = 0.65
+	SOL_MOVER_WALKUP   = 0.25
+	SOL_MOVER_WALKDOWN = 0.75
+	SOL_BASE_HEALTH    = 100
+	SOL_GUN_DAMAGE     = 10
+	SOL_GUN_RANGE      = 15
+
 	CORPSE_RESSURECT_TICKS = 30
 )
 
@@ -153,6 +160,12 @@ type Soldier struct {
 	field  *Field
 	id     int
 	health float32
+}
+
+func NewSoldier(field *Field) *Soldier {
+	return &Soldier{Walker: Walker{SOL_MOVER_WALK, SOL_MOVER_WALKUP, SOL_MOVER_WALKDOWN},
+		Chaser: Chaser{-1}, Gunner: Gunner{fireRange: SOL_GUN_RANGE, gunDamage: SOL_GUN_DAMAGE},
+		health: SOL_BASE_HEALTH, field: field}
 }
 
 func (s *Soldier) SetID(id int) {
