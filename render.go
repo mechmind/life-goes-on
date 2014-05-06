@@ -24,6 +24,8 @@ const (
 	TUI_FASTZED_FG   = termbox.ColorGreen | termbox.AttrBold
 
 	TUI_CORPSE_BG = termbox.ColorRed
+
+	TUI_POS_STEP = 5
 )
 
 func pollEvents(events chan termbox.Event) {
@@ -63,25 +65,25 @@ func RunTUI(updates chan *Field) {
 				case ev.Ch == 'h':
 					fallthrough
 				case ev.Key == termbox.KeyArrowLeft:
-					currentPos = currentPos.Add(-1, 0)
+					currentPos = currentPos.Add(-TUI_POS_STEP, 0)
 
 				// move view right
 				case ev.Ch == 'l':
 					fallthrough
 				case ev.Key == termbox.KeyArrowRight:
-					currentPos = currentPos.Add(1, 0)
+					currentPos = currentPos.Add(TUI_POS_STEP, 0)
 
 				// move view up
 				case ev.Ch == 'j':
 					fallthrough
 				case ev.Key == termbox.KeyArrowDown:
-					currentPos = currentPos.Add(0, 1)
+					currentPos = currentPos.Add(0, TUI_POS_STEP)
 
 				// move view down
 				case ev.Ch == 'k':
 					fallthrough
 				case ev.Key == termbox.KeyArrowUp:
-					currentPos = currentPos.Add(0, -1)
+					currentPos = currentPos.Add(0, -TUI_POS_STEP)
 
 				// quit
 				case ev.Ch == 'q':
