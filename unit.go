@@ -340,22 +340,11 @@ func (d *Damsel) adjustWalkSpeed() {
 
 func (d *Damsel) HearScream(dmg float32, src UnitCoord, distance float32) {
 	newAdrenaline := dmg / distance * DAM_FEAR_FACTOR
-	if d.adrenaline < FLOAT_ERROR || true {
+	if d.adrenaline < FLOAT_ERROR {
 		d.adrenaline = newAdrenaline
-		d.panicPoint = src
-		return
 	}
 
-	myCoord, _ := d.field.UnitByID(d.id)
-	oldWeight := d.adrenaline / myCoord.Distance(d.panicPoint)
-	newWeight := newAdrenaline
-	// normalize
-	oldWeight, newWeight = oldWeight/(oldWeight+newWeight), newWeight/(oldWeight+newWeight)
-	newPoint := d.panicPoint.Mult(oldWeight).AddCoord(src.Mult(newWeight)).Mult(0.5)
-	oldpanic := d.panicPoint
-	d.panicPoint = newPoint
-	d.adrenaline += newAdrenaline
-	log.Println("[dam] heard scream at", src, oldpanic, "->", d.panicPoint, "a:", d.adrenaline)
+	d.panicPoint = src
 }
 
 func (d *Damsel) RecieveDamage(from int, dmg float32) {
