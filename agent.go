@@ -194,10 +194,11 @@ func (d *DamselCrowd) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
 	} else {
 		if dam.wanderTarget == coord {
 			// wander around
-			rx := fbound(rand.Float32()*DAMSEL_WANDER_RADIUS-DAMSEL_WANDER_RADIUS/2, 0, 1024)
-			ry := fbound(rand.Float32()*DAMSEL_WANDER_RADIUS-DAMSEL_WANDER_RADIUS/2, 0, 1024)
-			dest := coord.Add(rx, ry)
-			dam.wanderTarget = dest
+			rx := fbound(coord.X+rand.Float32()*DAMSEL_WANDER_RADIUS-DAMSEL_WANDER_RADIUS/2,
+				0, 1024)
+			ry := fbound(coord.Y+rand.Float32()*DAMSEL_WANDER_RADIUS-DAMSEL_WANDER_RADIUS/2,
+				0, 1024)
+			dam.wanderTarget = UnitCoord{rx, ry}
 			//fmt.Println("[dam] selected wandering target for", dam.id, "to", dest)
 		}
 		dam.MoveToward(coord, dam.wanderTarget)

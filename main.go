@@ -39,8 +39,8 @@ func main() {
 	var zed2 = NewZed(field)
 
 	field.PlaceAgent(swarm)
-	field.PlaceUnit(UnitCoord{80, 15}, swarm, zed1)
-	field.PlaceUnit(UnitCoord{15, 80}, swarm, zed2)
+	field.PlaceUnit(UnitCoord{80, 85}, swarm, zed1)
+	field.PlaceUnit(UnitCoord{85, 80}, swarm, zed2)
 
 	var crowd Agent = &DamselCrowd{}
 	field.PlaceAgent(crowd)
