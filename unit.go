@@ -1,7 +1,8 @@
 package main
 
 import (
-//	"fmt"
+	"log"
+	//	"fmt"
 )
 
 const (
@@ -17,8 +18,8 @@ const (
 	ZED_NUTRITION_TO_HP_THRESHOLD = 1200
 	ZED_NUTRITION_TO_HP_SCALE     = 0.02
 	ZED_NUTRITION_FULL            = 1600
-	ZED_MOVER_WALK                = 0.5
-	ZED_MOVER_WALKUP              = 0.3
+	ZED_MOVER_WALK                = 0.65
+	ZED_MOVER_WALKUP              = 0.4
 	ZED_MOVER_WALKDOWN            = 0.6
 	ZED_EAT_NUTRITION             = 350
 	ZED_INFECT_NUTRITION          = 50
@@ -26,12 +27,22 @@ const (
 	ZED_HEALTH                    = 140
 	ZED_NUTRITION_BASE            = 1000
 
-	SOL_MOVER_WALK     = 0.65
+	SOL_MOVER_WALK     = 0.70
 	SOL_MOVER_WALKUP   = 0.25
 	SOL_MOVER_WALKDOWN = 0.75
 	SOL_BASE_HEALTH    = 100
 	SOL_GUN_DAMAGE     = 10
 	SOL_GUN_RANGE      = 15
+
+	DAM_MOVER_WALK      = 0.30
+	DAM_MOVER_WALKUP    = 0.10
+	DAM_MOVER_WALKDOWN  = 0.35
+	DAM_BASE_HEALTH     = 75
+	DAM_SCREAM_RANGE    = 20
+	DAM_PANIC_SPEEDUP   = 0.02
+	DAM_PANIC_MAX_SPEED = 0.55
+	DAM_ADRENALINE_FADE = 1
+	DAM_FEAR_FACTOR     = 5
 
 	CORPSE_RESSURECT_TICKS = 30
 )
@@ -112,9 +123,9 @@ func (w *Walker) MoveAway(f *Field, src, dest UnitCoord) UnitCoord {
 	// advance
 	nextPos := src.AddCoord(away.Mult(speed))
 	if src.Distance(nextPos) < src.Distance(dest) {
-		return nextPos
+		return nextPos.Bound(LOWER_BOUND, LOWER_BOUND, UPPER_BOUND, UPPER_BOUND)
 	} else {
-		return dest
+		return dest.Bound(LOWER_BOUND, LOWER_BOUND, UPPER_BOUND, UPPER_BOUND)
 	}
 }
 
@@ -288,8 +299,15 @@ type Damsel struct {
 	field        *Field
 	id           int
 	health       float32
+	panicPoint   UnitCoord
+	adrenaline   float32
 	lastAttacker int
 	wanderTarget UnitCoord
+}
+
+func NewDamsel(field *Field) *Damsel {
+	return &Damsel{Walker: Walker{DAM_MOVER_WALK, DAM_MOVER_WALKUP, DAM_MOVER_WALKDOWN},
+		lastAttacker: -1, health: DAM_BASE_HEALTH, field: field}
 }
 
 func (d *Damsel) SetID(id int) {
@@ -301,22 +319,63 @@ func (d *Damsel) GetID() int {
 }
 
 func (d *Damsel) MoveToward(src, dest UnitCoord) UnitCoord {
+	d.adjustWalkSpeed()
 	nextCoord := d.Walker.MoveToward(d.field, src, dest)
 	return d.field.MoveMe(d.id, nextCoord)
 }
 
 func (d *Damsel) MoveAway(src, dest UnitCoord) UnitCoord {
+	d.adjustWalkSpeed()
 	nextCoord := d.Walker.MoveAway(d.field, src, dest)
 	return d.field.MoveMe(d.id, nextCoord)
+}
+
+func (d *Damsel) adjustWalkSpeed() {
+	// calculate adrenaline effect
+	// FIXME: walkup/walkdown recalc
+	newSpeed := DAM_MOVER_WALK + d.adrenaline*DAM_PANIC_SPEEDUP
+	d.Walker = Walker{fbound(newSpeed, 0, DAM_PANIC_MAX_SPEED),
+		fbound(newSpeed, 0, DAM_PANIC_MAX_SPEED), fbound(newSpeed, 0, DAM_PANIC_MAX_SPEED)}
+}
+
+func (d *Damsel) HearScream(dmg float32, src UnitCoord, distance float32) {
+	newAdrenaline := dmg / distance * DAM_FEAR_FACTOR
+	if d.adrenaline < FLOAT_ERROR || true {
+		d.adrenaline = newAdrenaline
+		d.panicPoint = src
+		return
+	}
+
+	myCoord, _ := d.field.UnitByID(d.id)
+	oldWeight := d.adrenaline / myCoord.Distance(d.panicPoint)
+	newWeight := newAdrenaline
+	// normalize
+	oldWeight, newWeight = oldWeight/(oldWeight+newWeight), newWeight/(oldWeight+newWeight)
+	newPoint := d.panicPoint.Mult(oldWeight).AddCoord(src.Mult(newWeight)).Mult(0.5)
+	oldpanic := d.panicPoint
+	d.panicPoint = newPoint
+	d.adrenaline += newAdrenaline
+	log.Println("[dam] heard scream at", src, oldpanic, "->", d.panicPoint, "a:", d.adrenaline)
 }
 
 func (d *Damsel) RecieveDamage(from int, dmg float32) {
 	d.health -= dmg
 	d.lastAttacker = from
-	//fmt.Println("[dam] :( :( i got hit and have", d.health, "health")
+	// scream in pain
+	myCoord, _ := d.field.UnitByID(d.id)
+	neighs := d.field.UnitsInRange(myCoord, DAM_SCREAM_RANGE)
+	for _, neigh := range neighs {
+		if neighDam, ok := neigh.unit.(*Damsel); ok && neighDam.id != d.id {
+			neighDam.HearScream(dmg, myCoord, myCoord.Distance(neigh.coord))
+		}
+	}
+
 	if d.health < 0 {
 		//fmt.Println("[dam] im dead :'(")
 		d.field.KillMe(d.id)
+	} else {
+		// boost adrenaline
+		d.adrenaline += dmg
 	}
 }
 

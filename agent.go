@@ -181,9 +181,16 @@ func (d *DamselCrowd) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
 	dam := u.(*Damsel)
 	if dam.lastAttacker >= 0 {
 		// flee away
-		attackerCoord, _ := f.UnitByID(dam.lastAttacker)
+		attackerCoord, attacker := f.UnitByID(dam.lastAttacker)
 		dam.MoveAway(coord, attackerCoord)
+		if _, ok := attacker.(*Corpse); ok {
+			// attacker is dead, 'calm' down
+			dam.lastAttacker = -1
+		}
 		//fmt.Println("[dam] fleeing dam", dam.id, "from", coord, "to", to)
+	} else if dam.adrenaline > 0 {
+		// flee from panic point
+		dam.MoveAway(coord, dam.panicPoint)
 	} else {
 		if dam.wanderTarget == coord {
 			// wander around
@@ -195,6 +202,11 @@ func (d *DamselCrowd) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
 		}
 		dam.MoveToward(coord, dam.wanderTarget)
 		//fmt.Println("[dam] moved dam", dam.id, "from", coord, "to", dam.wanderTarget)
+	}
+
+	dam.adrenaline -= DAM_ADRENALINE_FADE
+	if dam.adrenaline < 0 {
+		dam.adrenaline = 0
 	}
 }
 

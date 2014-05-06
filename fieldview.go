@@ -17,7 +17,7 @@ func (f *FieldView) UnitsByDistance(src UnitCoord) []UnitPresence {
 }
 
 func (f *FieldView) UnitByID(id int) (UnitCoord, Unit) {
-	return f.field.units[id].coord, f.field.units[id].unit
+	return f.field.UnitByID(id)
 }
 
 func (f *FieldView) Reown(id int, agent Agent) {

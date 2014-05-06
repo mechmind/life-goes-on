@@ -5,6 +5,11 @@ import (
 	"math"
 )
 
+const (
+	LOWER_BOUND = 0
+	UPPER_BOUND = 1024
+)
+
 type UnitCoord struct {
 	X, Y float32
 }
@@ -32,6 +37,10 @@ func (u UnitCoord) Distance(to UnitCoord) float32 {
 		return 0
 	}
 	return float32(math.Sqrt(float64(dx*dx + dy*dy)))
+}
+
+func (u UnitCoord) Bound(lx, ly, hx, hy float32) UnitCoord {
+	return UnitCoord{fbound(u.X, lx, hx), fbound(u.Y, ly, hy)}
 }
 
 func (u UnitCoord) Cell() CellCoord {
@@ -75,28 +84,28 @@ func NextCellCoord(pos, dir UnitCoord) CellCoord {
 		// dir vector points to the cell counterclockwise to joint
 		switch {
 		case dir.X < 0 && dir.Y < 0:
-			return joint.Add(0, -1)
+			joint = joint.Add(0, -1)
 		case dir.X < 0 && dir.Y >= 0:
-			return joint.Add(-1, 0)
+			joint = joint.Add(-1, 0)
 		case dir.X >= 0 && dir.Y >= 0:
-			return joint.Add(0, 1)
+			joint = joint.Add(0, 1)
 		case dir.X >= 0 && dir.Y < 0:
-			return joint.Add(1, 0)
+			joint = joint.Add(1, 0)
 		}
 	} else {
 		// dir vector points to the cell clockwise to joint
 		switch {
 		case dir.X < 0 && dir.Y < 0:
-			return joint.Add(-1, 0)
+			joint = joint.Add(-1, 0)
 		case dir.X < 0 && dir.Y >= 0:
-			return joint.Add(0, 1)
+			joint = joint.Add(0, 1)
 		case dir.X >= 0 && dir.Y >= 0:
-			return joint.Add(1, 0)
+			joint = joint.Add(1, 0)
 		case dir.X >= 0 && dir.Y < 0:
-			return joint.Add(0, -1)
+			joint = joint.Add(0, -1)
 		}
 	}
-	return joint
+	return joint.Bound(LOWER_BOUND, LOWER_BOUND, UPPER_BOUND, UPPER_BOUND)
 }
 
 type CellCoord struct {
@@ -125,6 +134,10 @@ func (c CellCoord) Unit() UnitCoord {
 
 func (c CellCoord) UnitCenter() UnitCoord {
 	return UnitCoord{float32(c.X) + 0.5, float32(c.Y) + 0.5}
+}
+
+func (c CellCoord) Bound(lx, ly, hx, hy int) CellCoord {
+	return CellCoord{ibound(c.X, lx, hx), ibound(c.Y, ly, hy)}
 }
 
 func CheckCellCoordBounds(value, low, high CellCoord) bool {

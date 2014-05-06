@@ -1,11 +1,21 @@
 package main
 
 import (
+	"log"
 	"math/rand"
+	"os"
 	"time"
 )
 
 func main() {
+	// set up logging
+	f, err := os.Create("lgo.log")
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+	log.SetOutput(f)
+
 	// seed random
 	rand.Seed(time.Now().Unix())
 	updates := make(chan *Field)
@@ -37,8 +47,8 @@ func main() {
 
 	for idx := 0; idx < 135; idx++ {
 		coord := UnitCoord{rand.Float32() * 100, rand.Float32() * 100}
-		dam := &Damsel{Walker: Walker{0.30, 0.10, 0.25}, wanderTarget: coord, lastAttacker: -1,
-			health: 75, field: field}
+		dam := NewDamsel(field)
+		dam.wanderTarget = coord
 		field.PlaceUnit(dam.wanderTarget, crowd, dam)
 	}
 

@@ -14,6 +14,9 @@ const (
 	TUI_DAMSEL_CHAR = 'B'
 	TUI_DAMSEL_FG   = termbox.ColorYellow
 
+	TUI_FASTDAMSEL_CHAR = 'B'
+	TUI_FASTDAMSEL_FG   = termbox.ColorYellow | termbox.AttrBold
+
 	TUI_ZED_CHAR = 'Z'
 	TUI_ZED_FG   = termbox.ColorGreen
 
@@ -117,7 +120,12 @@ func getUnitView(u Unit) (ch rune, fg, bg termbox.Attribute) {
 	case *Soldier:
 		return TUI_SOLDIER_CHAR, TUI_SOLDIER_FG, TUI_DEFAULT_BG
 	case *Damsel:
-		return TUI_DAMSEL_CHAR, TUI_DAMSEL_FG, TUI_DEFAULT_BG
+		dam := u.(*Damsel)
+		if dam.adrenaline > 0 {
+			return TUI_FASTDAMSEL_CHAR, TUI_FASTDAMSEL_FG, TUI_DEFAULT_BG
+		} else {
+			return TUI_DAMSEL_CHAR, TUI_DAMSEL_FG, TUI_DEFAULT_BG
+		}
 	case *Zed:
 		zed := u.(*Zed)
 		if zed.nutrition > ZED_NUTRITION_FULL {

@@ -82,6 +82,21 @@ func (f *Field) CellAt(c CellCoord) *Cell {
 	return &f.cells[c.Y*f.xSize+c.X]
 }
 
+func (f *Field) UnitByID(id int) (UnitCoord, Unit) {
+	return f.units[id].coord, f.units[id].unit
+}
+
+func (f *Field) UnitsInRange(center UnitCoord, radius float32) []UnitPresence {
+	var units []UnitPresence
+
+	for _, up := range f.units {
+		if center.Distance(up.coord) < radius {
+			units = append(units, up)
+		}
+	}
+	return units
+}
+
 func (f *Field) MoveMe(id int, coord UnitCoord) UnitCoord {
 	f.units[id].coord = coord
 	return coord

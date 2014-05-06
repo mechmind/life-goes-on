@@ -17,3 +17,14 @@ func fbound(value, low, high float32) float32 {
 
 	return value
 }
+
+func ibound(value, low, high int) int {
+	if value < low {
+		return low
+	}
+	if value > high-1 {
+		return high - 1
+	}
+
+	return value
+}
