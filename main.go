@@ -7,6 +7,10 @@ import (
 	"time"
 )
 
+const (
+	TOTAL_DAMSELS = 200
+)
+
 func main() {
 	// set up logging
 	f, err := os.Create("lgo.log")
@@ -45,7 +49,7 @@ func main() {
 	var crowd Agent = &DamselCrowd{}
 	field.PlaceAgent(crowd)
 
-	for idx := 0; idx < 135; idx++ {
+	for idx := 0; idx < TOTAL_DAMSELS; idx++ {
 		coord := UnitCoord{rand.Float32() * 100, rand.Float32() * 100}
 		dam := NewDamsel(field)
 		dam.wanderTarget = coord
