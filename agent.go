@@ -1,7 +1,6 @@
 package main
 
 import (
-	//"fmt"
 	"math/rand"
 )
 
@@ -42,7 +41,6 @@ func (s *Squad) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
 
 	if !zedFound {
 		// nothing to do
-		//fmt.Println("[squad] no task for soldier", u.(*Soldier).id)
 		return
 	}
 
@@ -50,12 +48,10 @@ func (s *Squad) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
 	dest := zed.coord
 	soldier := u.(*Soldier)
 	if soldier.CanShoot(coord, dest) {
-		//fmt.Println("[squad] soldier", u.(*Soldier).id, "shooting at zed", zed.unit.(*Zed).id,
 		//	"at", dest)
 		soldier.Shoot(coord, dest, zed.unit)
 	} else {
 		u.MoveToward(coord, dest)
-		//fmt.Println("[squad] moved soldier", u.(*Soldier).id, "from", coord, "to", to)
 	}
 }
 
@@ -95,7 +91,6 @@ func (z *ZedSwarm) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
 		// fight back
 		attackerCoord, attacker := f.UnitByID(zed.lastAttacker)
 		if zed.CanBite(coord, attackerCoord) {
-			//fmt.Println("[swarm] biting", attacker.GetID())
 			zed.Bite(coord, attackerCoord, attacker)
 			_, attacker = f.UnitByID(zed.lastAttacker)
 			if corpse, ok := attacker.(*Corpse); ok {
@@ -114,8 +109,6 @@ func (z *ZedSwarm) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
 			}
 		} else {
 			zed.MoveToward(coord, attackerCoord)
-			//fmt.Println("[swarm] moved zed", u.(*Zed).id, coord,
-			//	"==>", attackerCoord)
 		}
 	} else {
 		// find nearby human and attack it
@@ -134,14 +127,12 @@ func (z *ZedSwarm) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
 
 		if !nonzedFound {
 			// nothing to do
-			//fmt.Println("[swarm] no humans for zed", zed.id)
 			return
 		}
 
 		// chase toward nonzed
 		dest := nonzed.coord
 		if zed.CanBite(coord, dest) {
-			//fmt.Println("[swarm] biting", u.GetID())
 			zed.Bite(coord, dest, nonzed.unit)
 			_, victim := f.UnitByID(nonzed.unit.GetID())
 			if corpse, ok := victim.(*Corpse); ok {
@@ -159,8 +150,6 @@ func (z *ZedSwarm) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
 			}
 		} else {
 			zed.MoveToward(coord, dest)
-			//fmt.Println("[swarm] moved zed", zed.id, coord, "->", dest, "n:", zed.nutrition,
-			//"r:", zed.rage, "s:", zed.Walker.WalkSpeed, "h:", zed.health)
 		}
 	}
 }
@@ -187,7 +176,6 @@ func (d *DamselCrowd) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
 			// attacker is dead, 'calm' down
 			dam.lastAttacker = -1
 		}
-		//fmt.Println("[dam] fleeing dam", dam.id, "from", coord, "to", to)
 	} else if dam.adrenaline > 0 {
 		// flee from panic point
 		dam.MoveAway(coord, dam.panicPoint)
@@ -199,10 +187,8 @@ func (d *DamselCrowd) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
 			ry := fbound(coord.Y+rand.Float32()*DAMSEL_WANDER_RADIUS-DAMSEL_WANDER_RADIUS/2,
 				0, 1024)
 			dam.wanderTarget = UnitCoord{rx, ry}
-			//fmt.Println("[dam] selected wandering target for", dam.id, "to", dest)
 		}
 		dam.MoveToward(coord, dam.wanderTarget)
-		//fmt.Println("[dam] moved dam", dam.id, "from", coord, "to", dam.wanderTarget)
 	}
 
 	dam.adrenaline -= DAM_ADRENALINE_FADE

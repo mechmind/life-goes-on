@@ -1,7 +1,6 @@
 package main
 
 import (
-	//	"fmt"
 )
 
 const (
@@ -73,8 +72,6 @@ func (w *Walker) MoveToward(f *Field, src, dest UnitCoord) UnitCoord {
 	currentCell := f.CellAt(src.Cell())
 	nextCell := f.CellAt(nextCellCoord)
 
-	//fmt.Printf("[unit] moving from %s toward %s: toward=%s, next cell=%s\n", src, dest,
-	//	toward, nextCellCoord)
 	var speed float32
 	switch {
 	case currentCell.elevation == nextCell.elevation:
@@ -104,8 +101,6 @@ func (w *Walker) MoveAway(f *Field, src, dest UnitCoord) UnitCoord {
 	currentCell := f.CellAt(src.Cell())
 	nextCell := f.CellAt(nextCellCoord)
 
-	//fmt.Printf("[unit] moving from %s toward %s: toward=%s, next cell=%s\n", src, dest,
-	//	toward, nextCellCoord)
 	var speed float32
 	switch {
 	case currentCell.elevation == nextCell.elevation:
@@ -193,9 +188,7 @@ func (s *Soldier) MoveToward(src, dest UnitCoord) UnitCoord {
 
 func (s *Soldier) RecieveDamage(from int, dmg float32) {
 	s.health -= dmg
-	//fmt.Println("[squad] FUCK i got hit and have", s.health, "health")
 	if s.health < 0 {
-		//fmt.Println("[squad] im dead")
 		s.field.KillMe(s.id)
 	}
 	s.health -= dmg
@@ -257,9 +250,7 @@ func (z *Zed) RecieveDamage(from int, dmg float32) {
 	z.health -= dmg
 	z.rage += dmg * ZED_RAGE_FROM_DAMAGE
 	z.lastAttacker = from
-	//fmt.Println("[zed] ARRRGH i got hit and have", z.health, "health")
 	if z.health < 0 {
-		//fmt.Println("[zed] im finally dead")
 		z.field.KillMe(z.id)
 	}
 }
@@ -286,7 +277,6 @@ func (z *Zed) Digest() bool {
 
 	if z.nutrition < 0 {
 		// starve to death
-		//fmt.Println("[zed] im starved to death")
 		z.field.KillMe(z.id)
 		return false
 	}
@@ -359,7 +349,6 @@ func (d *Damsel) RecieveDamage(from int, dmg float32) {
 	}
 
 	if d.health < 0 {
-		//fmt.Println("[dam] im dead :'(")
 		d.field.KillMe(d.id)
 	} else {
 		// boost adrenaline

@@ -1,7 +1,6 @@
 package main
 
 import (
-//"fmt"
 )
 
 const (
@@ -42,7 +41,6 @@ func copyField(f *Field) *Field {
 }
 
 func (f *Field) Tick(tick int64) {
-	//fmt.Println("[field] tick")
 	//for _, agent := range f.agents {
 	//	agent.Tick(tick)
 	//}
