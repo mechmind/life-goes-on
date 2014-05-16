@@ -140,6 +140,15 @@ func (c CellCoord) Bound(lx, ly, hx, hy int) CellCoord {
 	return CellCoord{ibound(c.X, lx, hx), ibound(c.Y, ly, hy)}
 }
 
+func (c CellCoord) Distance(to CellCoord) float32 {
+	dx := c.X - to.X
+	dy := c.Y - to.Y
+	if dx == 0 && dy == 0{
+		return 0
+	}
+	return float32(math.Sqrt(float64(dx*dx + dy*dy)))
+}
+
 func CheckCellCoordBounds(value, low, high CellCoord) bool {
 	if low.X <= value.X && value.X <= high.X &&
 		low.Y <= value.Y && value.Y <= high.Y {

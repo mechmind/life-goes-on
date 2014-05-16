@@ -1,11 +1,11 @@
 package main
 
-import (
-)
+import ()
 
 const (
 	FLOAT_ERROR           = 0.000001
 	FIELD_BACKBUFFER_SIZE = 3
+
 )
 
 var nopAgent NopAgent
@@ -21,7 +21,9 @@ type Field struct {
 }
 
 func NewField(xSize, ySize int, updates chan *Field) *Field {
-	return &Field{xSize, ySize, make([]Cell, xSize*ySize), nil, nil, updates}
+	field := &Field{xSize, ySize, make([]Cell, xSize*ySize), nil, nil, updates}
+	field.makePassableField()
+	return field
 }
 
 func copyField(f *Field) *Field {
@@ -108,6 +110,16 @@ func (f *Field) KillMe(id int) {
 		unit: &Corpse{f, id, unit, 0}}
 }
 
+// terrain api
+// makePassableField makes everything but border passable
+func (f *Field) makePassableField() {
+	for i := 1; i < f.xSize - 1; i++ {
+		for j := 1; j < f.ySize - 1; j++ {
+			f.CellAt(CellCoord{i, j}).passable = true
+		}
+	}
+}
+
 type UnitPresence struct {
 	coord UnitCoord
 	agent Agent
@@ -116,6 +128,7 @@ type UnitPresence struct {
 
 type Cell struct {
 	elevation int16
+	passable  bool
 	object    Object
 	items     []Item
 }

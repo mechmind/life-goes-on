@@ -6,7 +6,7 @@ import (
 
 const (
 	TUI_DEFAULT_BG = termbox.ColorBlack
-	TUI_DEFULT_FG  = termbox.ColorWhite
+	TUI_DEFAULT_FG = termbox.ColorWhite
 
 	TUI_SOLDIER_CHAR = '@'
 	TUI_SOLDIER_FG   = termbox.ColorRed | termbox.AttrBold
@@ -24,6 +24,10 @@ const (
 	TUI_FASTZED_FG   = termbox.ColorGreen | termbox.AttrBold
 
 	TUI_CORPSE_BG = termbox.ColorRed
+
+	TUI_WALL_CHAR      = '#'
+	TUI_FLAT_CHAR      = ' '
+	TUI_OFFSCREEN_CHAR = TUI_WALL_CHAR
 
 	TUI_POS_STEP = 5
 )
@@ -100,8 +104,31 @@ func drawField(f *Field, pos CellCoord) {
 	sizex, sizey := termbox.Size()
 	upperBound := pos.Add(sizex-1, sizey-1)
 
-	termbox.Clear(TUI_DEFULT_FG, TUI_DEFAULT_BG)
+	termbox.Clear(TUI_DEFAULT_FG, TUI_DEFAULT_BG)
 
+	var fieldZero = CellCoord{0, 0}
+	var fieldMax = CellCoord{f.xSize - 1, f.ySize - 1}
+	// render walls
+	for i := pos.X; i < upperBound.X; i++ {
+		for j := pos.Y; j < upperBound.Y; j++ {
+			tileCell := CellCoord{i, j}
+			screenPos := tileCell.AddCoord(pos.Mul(-1))
+			if !CheckCellCoordBounds(tileCell, fieldZero, fieldMax) {
+				termbox.SetCell(screenPos.X, screenPos.Y, TUI_OFFSCREEN_CHAR,
+					TUI_DEFAULT_FG, TUI_DEFAULT_BG)
+			} else {
+				if f.CellAt(tileCell).passable {
+					termbox.SetCell(screenPos.X, screenPos.Y, TUI_FLAT_CHAR,
+						TUI_DEFAULT_FG, TUI_DEFAULT_BG)
+				} else {
+					termbox.SetCell(screenPos.X, screenPos.Y, TUI_WALL_CHAR,
+						TUI_DEFAULT_FG, TUI_DEFAULT_BG)
+				}
+			}
+		}
+	}
+
+	// render units
 	for _, up := range f.units {
 		unitCell := up.coord.Cell()
 		if !CheckCellCoordBounds(unitCell, pos, upperBound) {
@@ -140,5 +167,5 @@ func getUnitView(u Unit) (ch rune, fg, bg termbox.Attribute) {
 		ch, fg, _ := getUnitView(corpse.unit)
 		return ch, fg, TUI_CORPSE_BG
 	}
-	return ' ', TUI_DEFULT_FG, TUI_DEFAULT_BG
+	return ' ', TUI_DEFAULT_FG, TUI_DEFAULT_BG
 }
