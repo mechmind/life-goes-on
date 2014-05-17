@@ -34,6 +34,13 @@ func ibound(value, low, high int) int {
 	return value
 }
 
+func sgn(value float32) int {
+	if value < 0 {
+		return -1
+	}
+	return 1
+}
+
 func logPanic() {
 	if err := recover(); err != nil {
 		log.Println("main: recovering err:", err)
