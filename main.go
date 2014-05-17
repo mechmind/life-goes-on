@@ -27,8 +27,9 @@ func main() {
 	rand.Seed(time.Now().Unix())
 	updates := make(chan *Field)
 	field := NewField(1024, 1024, updates)
-	time := NewTime(10, field)
+	time := NewTime(1, field)
 
+	/*
 	var mainSquad Agent = &Squad{}
 	var sold1 = NewSoldier(field)
 	var sold2 = NewSoldier(field)
@@ -49,23 +50,29 @@ func main() {
 	field.PlaceUnit(UnitCoord{80, 85}, swarm, zed1)
 	field.PlaceUnit(UnitCoord{85, 80}, swarm, zed2)
 
+	*/
+
 	var crowd Agent = &DamselCrowd{}
 	field.PlaceAgent(crowd)
 
+	/*
 	for idx := 0; idx < TOTAL_DAMSELS; idx++ {
 		coord := UnitCoord{rand.Float32() * 100, rand.Float32() * 100}
 		dam := NewDamsel(field)
 		dam.wanderTarget = coord
 		field.PlaceUnit(dam.wanderTarget, crowd, dam)
 	}
+	*/
+
 
 	// FIXME(pathfind): debugging
 	// make some obstackles
 	for i := 5; i < 25; i++ {
 		field.CellAt(CellCoord{i, 15}).passable = false
 	}
-	// find some path
-	field.FindPath(CellCoord{10, 10}, CellCoord{20, 20})
+	dam := NewDamsel(field)
+	dam.wanderTarget = UnitCoord{22, 20}
+	field.PlaceUnit(UnitCoord{13, 13}, crowd, dam)
 
 	go time.Run()
 	RunTUI(updates)

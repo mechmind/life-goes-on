@@ -150,6 +150,7 @@ func drawField(f *Field, pos CellCoord) {
 	// FIXME(pathfind)
 	if p := f.pathfinder; p != nil {
 		for coord, cell := range p.cells {
+			continue
 			if !CheckCellCoordBounds(coord, pos, upperBound) {
 				continue
 			}
