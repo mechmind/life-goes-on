@@ -1,5 +1,10 @@
 package main
 
+import (
+	"log"
+	"runtime"
+)
+
 func fabs(f float32) float32 {
 	if f < 0 {
 		return -f
@@ -27,4 +32,13 @@ func ibound(value, low, high int) int {
 	}
 
 	return value
+}
+
+func logPanic() {
+	if err := recover(); err != nil {
+		log.Println("main: recovering err:", err)
+		var stack = make([]byte, 4096)
+		n := runtime.Stack(stack, false)
+		log.Println(string(stack[:n]))
+	}
 }
