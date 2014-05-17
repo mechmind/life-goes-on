@@ -16,6 +16,18 @@ func (f *FieldView) UnitsByDistance(src UnitCoord) []UnitPresence {
 	return sorter.units
 }
 
+func (f *FieldView) UnitsInRange(src UnitCoord, r float32) []UnitPresence {
+	presence := make([]UnitPresence, 0)
+	for _, u := range f.field.units {
+		if src.Distance(u.coord) < r {
+			presence = append(presence, u)
+		}
+	}
+	sorter := &unitsByDistance{src, presence}
+	sort.Sort(sorter)
+	return sorter.units
+}
+
 func (f *FieldView) UnitByID(id int) (UnitCoord, Unit) {
 	return f.field.UnitByID(id)
 }
@@ -27,6 +39,10 @@ func (f *FieldView) Reown(id int, agent Agent) {
 func (f *FieldView) ReplaceUnit(id int, agent Agent, u Unit) {
 	coord := f.field.units[id].coord
 	f.field.ReplaceUnit(id, coord, agent, u)
+}
+
+func (f *FieldView) FindPath(from, to CellCoord) Path {
+	return f.field.FindPath(from, to)
 }
 
 // unitsByDistance used to sort units on field, nearest to src first

@@ -1,7 +1,6 @@
 package main
 
-import (
-)
+import ()
 
 const (
 	ZED_NUTRITION_WALKING         = 1
@@ -165,6 +164,8 @@ type Soldier struct {
 	field  *Field
 	id     int
 	health float32
+	target UnitCoord
+	path   Path
 }
 
 func NewSoldier(field *Field) *Soldier {
@@ -184,6 +185,10 @@ func (s *Soldier) GetID() int {
 func (s *Soldier) MoveToward(src, dest UnitCoord) UnitCoord {
 	nextCoord := s.Walker.MoveToward(s.field, src, dest)
 	return s.field.MoveMe(s.id, nextCoord)
+}
+
+func (s *Soldier) CanShoot(src, dest UnitCoord) bool {
+	return s.Gunner.CanShoot(src, dest) && s.field.HaveLOS(src, dest)
 }
 
 func (s *Soldier) RecieveDamage(from int, dmg float32) {

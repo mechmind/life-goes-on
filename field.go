@@ -5,7 +5,6 @@ import ()
 const (
 	FLOAT_ERROR           = 0.000001
 	FIELD_BACKBUFFER_SIZE = 3
-
 )
 
 var nopAgent NopAgent
@@ -18,10 +17,13 @@ type Field struct {
 	agents       []Agent
 	units        []UnitPresence
 	updates      chan *Field
+
+	// FIXME(pathfind): remove after debugging
+	pathfinder *PathFinder
 }
 
 func NewField(xSize, ySize int, updates chan *Field) *Field {
-	field := &Field{xSize, ySize, make([]Cell, xSize*ySize), nil, nil, updates}
+	field := &Field{xSize, ySize, make([]Cell, xSize*ySize), nil, nil, updates, nil}
 	field.makePassableField()
 	return field
 }
@@ -31,23 +33,27 @@ func copyField(f *Field) *Field {
 	select {
 	case bb = <-fieldBackbuffer:
 	default:
-		bb = &Field{f.xSize, f.ySize, make([]Cell, f.xSize*f.ySize), nil, nil, nil}
+		bb = &Field{f.xSize, f.ySize, make([]Cell, f.xSize*f.ySize), nil, nil, nil, nil}
 	}
 
 	copy(bb.cells, f.cells)
 	bb.units = append(bb.units[:0], f.units...)
 	bb.agents = append(bb.agents[:0], f.agents...)
+	bb.pathfinder = f.pathfinder // FIXME(pathfind)
 	bb.updates = fieldBackbuffer
 
 	return bb
 }
 
 func (f *Field) Tick(tick int64) {
-	//for _, agent := range f.agents {
-	//	agent.Tick(tick)
-	//}
-
 	view := &FieldView{f}
+
+	for _, agent := range f.agents {
+		if thinker, ok := agent.(Thinker); ok {
+			thinker.Think(view, tick)
+		}
+	}
+
 	for _, up := range f.units {
 		up.agent.HandleUnit(view, up.unit, up.coord)
 	}
@@ -97,6 +103,35 @@ func (f *Field) UnitsInRange(center UnitCoord, radius float32) []UnitPresence {
 	return units
 }
 
+// return true if have line of sight from 'from' to 'to'
+func (f *Field) HaveLOS(from, to UnitCoord) bool {
+	toward := NormTowardCoord(from, to)
+
+	current := from
+	for {
+		// always check next and current cell passability because we can advance 2 cells 
+		// on one step
+		if f.CellAt(current.Cell()).passable == false {
+			return false
+		}
+
+		if current == to {
+			return true
+		}
+
+		nextCell := NextCellCoord(from, toward)
+		if f.CellAt(nextCell).passable == false {
+			return false
+		}
+
+		if current.Distance(to) < 1 {
+			current = to
+		} else {
+			current = current.AddCoord(toward)
+		}
+	}
+}
+
 func (f *Field) MoveMe(id int, coord UnitCoord) UnitCoord {
 	f.units[id].coord = coord
 	return coord
@@ -110,11 +145,18 @@ func (f *Field) KillMe(id int) {
 		unit: &Corpse{f, id, unit, 0}}
 }
 
+func (f *Field) FindPath(from, to CellCoord) Path {
+	finder := NewPathFinder(f)
+	path := finder.FindPath(from, to)
+	f.pathfinder = finder //FIXME(pathfind): remove after debug
+	return path
+}
+
 // terrain api
 // makePassableField makes everything but border passable
 func (f *Field) makePassableField() {
-	for i := 1; i < f.xSize - 1; i++ {
-		for j := 1; j < f.ySize - 1; j++ {
+	for i := 1; i < f.xSize-1; i++ {
+		for j := 1; j < f.ySize-1; j++ {
 			f.CellAt(CellCoord{i, j}).passable = true
 		}
 	}

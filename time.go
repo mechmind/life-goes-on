@@ -20,6 +20,7 @@ func NewTime(freq int64, ticker Ticker) *Time {
 
 func (t *Time) Run() {
 	var counter int64
+	defer logPanic()
 	for _ = range t.clock.C {
 		t.ticker.Tick(counter)
 		counter++

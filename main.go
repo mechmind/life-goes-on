@@ -20,6 +20,9 @@ func main() {
 	defer f.Close()
 	log.SetOutput(f)
 
+	// panic protection
+	defer logPanic()
+
 	// seed random
 	rand.Seed(time.Now().Unix())
 	updates := make(chan *Field)
@@ -55,6 +58,14 @@ func main() {
 		dam.wanderTarget = coord
 		field.PlaceUnit(dam.wanderTarget, crowd, dam)
 	}
+
+	// FIXME(pathfind): debugging
+	// make some obstackles
+	for i := 5; i < 25; i++ {
+		field.CellAt(CellCoord{i, 15}).passable = false
+	}
+	// find some path
+	field.FindPath(CellCoord{10, 10}, CellCoord{20, 20})
 
 	go time.Run()
 	RunTUI(updates)

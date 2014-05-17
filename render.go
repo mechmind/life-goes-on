@@ -30,6 +30,11 @@ const (
 	TUI_OFFSCREEN_CHAR = TUI_WALL_CHAR
 
 	TUI_POS_STEP = 5
+
+	// FIXME(pathfind)
+	TUI_PATHFIND_OPEN_BG   = termbox.ColorCyan
+	TUI_PATHFIND_CLOSED_BG = termbox.ColorYellow
+	TUI_PATHFIND_PATH_BG   = termbox.ColorRed
 )
 
 func pollEvents(events chan termbox.Event) {
@@ -139,6 +144,33 @@ func drawField(f *Field, pos CellCoord) {
 		screenPos := unitCell.AddCoord(pos.Mul(-1))
 
 		termbox.SetCell(screenPos.X, screenPos.Y, ch, fg, bg)
+	}
+
+	// render pathfind
+	// FIXME(pathfind)
+	if p := f.pathfinder; p != nil {
+		for coord, cell := range p.cells {
+			if !CheckCellCoordBounds(coord, pos, upperBound) {
+				continue
+			}
+			screenPos := coord.AddCoord(pos.Mul(-1))
+			switch {
+			case cell.closed:
+				termbox.SetCell(screenPos.X, screenPos.Y, TUI_FLAT_CHAR,
+					TUI_DEFAULT_FG, TUI_PATHFIND_CLOSED_BG)
+			case cell.open:
+				termbox.SetCell(screenPos.X, screenPos.Y, TUI_FLAT_CHAR,
+					TUI_DEFAULT_FG, TUI_PATHFIND_OPEN_BG)
+			}
+		}
+		for _, coord := range p.path {
+			if !CheckCellCoordBounds(coord, pos, upperBound) {
+				continue
+			}
+			screenPos := coord.AddCoord(pos.Mul(-1))
+			termbox.SetCell(screenPos.X, screenPos.Y, TUI_FLAT_CHAR,
+				TUI_DEFAULT_FG, TUI_PATHFIND_PATH_BG)
+		}
 	}
 
 	termbox.Flush()

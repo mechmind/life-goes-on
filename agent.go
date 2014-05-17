@@ -4,7 +4,10 @@ import (
 	"math/rand"
 )
 
-const DAMSEL_WANDER_RADIUS = 40
+const (
+	DAMSEL_WANDER_RADIUS = 40
+	SQUAD_RETARGET_TICKS = 30
+)
 
 type Agent interface {
 	AttachUnit(Unit)
@@ -13,9 +16,13 @@ type Agent interface {
 	HandleUnit(*FieldView, Unit, UnitCoord)
 }
 
+type Thinker interface {
+	Think(field *FieldView, tick int64)
+}
+
 type Squad struct {
 	units  []*Soldier
-	moveTo CellCoord
+	target UnitCoord
 }
 
 func (s *Squad) AttachUnit(u Unit) {
@@ -23,35 +30,77 @@ func (s *Squad) AttachUnit(u Unit) {
 }
 
 func (s *Squad) DetachUnit(u Unit) {
-	// FIXME: implement
+	dsol := u.(*Soldier)
+	oldLen := len(s.units)
+	for idx, sol := range s.units {
+		if dsol == sol {
+			// remove unit from slice
+			s.units = append(s.units[:idx], s.units[idx+1:]...)
+			s.units[:oldLen][oldLen-1] = nil
+			return
+		}
+	}
 }
 
 func (s *Squad) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
-	// find nearby zed and move toward it
-	byDistance := f.UnitsByDistance(coord)
-	var zed UnitPresence
-	var zedFound bool
-	for id, u := range byDistance {
-		if _, ok := u.unit.(*Zed); ok {
-			zed = byDistance[id]
-			zedFound = true
-			break
+	soldier := u.(*Soldier)
+	// check any zeds nearby
+	byDistance := f.UnitsInRange(coord, soldier.Gunner.fireRange)
+	for _, zed := range byDistance {
+		if _, ok := zed.unit.(*Zed); ok {
+			if soldier.CanShoot(coord, zed.coord) {
+				// shoot that zed
+				soldier.Shoot(coord, zed.coord, zed.unit)
+				return
+			}
 		}
 	}
 
-	if !zedFound {
-		// nothing to do
+	// no zeds in fire range, move toward target
+	if s.target != soldier.target {
+		soldier.target = s.target
+		soldier.path = f.FindPath(coord.Cell(), soldier.target.Cell())
+	}
+
+	target, ok := soldier.path.Current()
+	if ok {
+		if coord.Distance(target.UnitCenter()) < FLOAT_ERROR {
+			target, ok = soldier.path.Next()
+			if ok {
+				u.MoveToward(coord, target.UnitCenter())
+			}
+		} else {
+			u.MoveToward(coord, target.UnitCenter())
+		}
+	}
+}
+
+func (s *Squad) Think(view *FieldView, tick int64) {
+	if len(s.units) == 0 {
 		return
 	}
 
-	// chase toward zed
-	dest := zed.coord
-	soldier := u.(*Soldier)
-	if soldier.CanShoot(coord, dest) {
-		//	"at", dest)
-		soldier.Shoot(coord, dest, zed.unit)
-	} else {
-		u.MoveToward(coord, dest)
+	coord, _ := view.UnitByID(s.units[0].GetID())
+	// make path to nearby zed
+	if tick%SQUAD_RETARGET_TICKS == 0 {
+		byDistance := view.UnitsByDistance(coord)
+		var zed UnitPresence
+		var zedFound bool
+		for id, u := range byDistance {
+			if _, ok := u.unit.(*Zed); ok {
+				zed = byDistance[id]
+				zedFound = true
+				break
+			}
+		}
+
+		if !zedFound {
+			// nothing to do
+			return
+		}
+
+		// chase toward zed
+		s.target = zed.coord
 	}
 }
 
