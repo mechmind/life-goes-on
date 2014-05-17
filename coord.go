@@ -80,32 +80,36 @@ func NextCellCoord(pos, dir UnitCoord) CellCoord {
 	}
 	jointDir := joint.Unit().AddCoord(dir.Mult(-1))
 	crossProd := dir.X*jointDir.Y - dir.Y*jointDir.X
-	if crossProd < 0 {
+	next := pos.Cell()
+	if fabs(crossProd) < FLOAT_ERROR {
+		// moving right into joint
+		next = next.Add(sgn(dir.X), sgn(dir.Y))
+	} else if crossProd < 0 {
 		// dir vector points to the cell counterclockwise to joint
 		switch {
 		case dir.X < 0 && dir.Y < 0:
-			joint = joint.Add(0, -1)
+			next = next.Add(0, -1)
 		case dir.X < 0 && dir.Y >= 0:
-			joint = joint.Add(-1, 0)
+			next = next.Add(-1, 0)
 		case dir.X >= 0 && dir.Y >= 0:
-			joint = joint.Add(0, 1)
+			next = next.Add(0, 1)
 		case dir.X >= 0 && dir.Y < 0:
-			joint = joint.Add(1, 0)
+			next = next.Add(1, 0)
 		}
 	} else {
-		// dir vector points to the cell clockwise to joint
+		// dir vector points to the cell clockwise to next
 		switch {
 		case dir.X < 0 && dir.Y < 0:
-			joint = joint.Add(-1, 0)
+			next = next.Add(-1, 0)
 		case dir.X < 0 && dir.Y >= 0:
-			joint = joint.Add(0, 1)
+			next = next.Add(0, 1)
 		case dir.X >= 0 && dir.Y >= 0:
-			joint = joint.Add(1, 0)
+			next = next.Add(1, 0)
 		case dir.X >= 0 && dir.Y < 0:
-			joint = joint.Add(0, -1)
+			next = next.Add(0, -1)
 		}
 	}
-	return joint.Bound(LOWER_BOUND, LOWER_BOUND, UPPER_BOUND, UPPER_BOUND)
+	return next.Bound(LOWER_BOUND, LOWER_BOUND, UPPER_BOUND, UPPER_BOUND)
 }
 
 type CellCoord struct {
