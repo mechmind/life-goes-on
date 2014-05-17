@@ -231,11 +231,11 @@ func (d *DamselCrowd) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
 	} else {
 		if dam.wanderTarget == coord {
 			// wander around
-			rx := fbound(coord.X+rand.Float32()*DAMSEL_WANDER_RADIUS-DAMSEL_WANDER_RADIUS/2,
-				0, 1024)
-			ry := fbound(coord.Y+rand.Float32()*DAMSEL_WANDER_RADIUS-DAMSEL_WANDER_RADIUS/2,
-				0, 1024)
-			dam.wanderTarget = UnitCoord{rx, ry}
+			rx := ibound(coord.Cell().X+int(rand.Int31n(DAMSEL_WANDER_RADIUS))-
+				DAMSEL_WANDER_RADIUS/2, 0, 1024)
+			ry := ibound(coord.Cell().Y+int(rand.Int31n(DAMSEL_WANDER_RADIUS))-
+				DAMSEL_WANDER_RADIUS/2, 0, 1024)
+			dam.wanderTarget = CellCoord{rx, ry}.UnitCenter()
 		}
 		dam.MoveToward(coord, dam.wanderTarget)
 	}
