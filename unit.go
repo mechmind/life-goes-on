@@ -1,6 +1,8 @@
 package main
 
-import ()
+import (
+	"log"
+)
 
 const (
 	ZED_NUTRITION_WALKING         = 1
@@ -68,8 +70,28 @@ type Walker struct {
 func (w *Walker) MoveToward(f *Field, src, dest UnitCoord) UnitCoord {
 	toward := NormTowardCoord(src, dest)
 	nextCellCoord := NextCellCoord(src, toward)
-	currentCell := f.CellAt(src.Cell())
+	currentCellCoord := src.Cell()
+	currentCell := f.CellAt(currentCellCoord)
 	nextCell := f.CellAt(nextCellCoord)
+	log.Println("walk:", src, "/", currentCellCoord, "->", dest, "/", nextCellCoord)
+	if nextCell.passable == false {
+		// cell is not passable, crawl at edge of cell
+		switch dx := nextCellCoord.X - currentCellCoord.X; {
+		case dx < 0:
+			dest.X = float32(currentCellCoord.X) + FLOAT_ERROR
+		case dx > 0:
+			dest.X = float32(nextCellCoord.X) - FLOAT_ERROR
+		}
+		switch dy := nextCellCoord.Y - currentCellCoord.Y; {
+		case dy < 0:
+			dest.Y = float32(currentCellCoord.Y) + FLOAT_ERROR
+		case dy > 0:
+			dest.Y = float32(nextCellCoord.Y) - FLOAT_ERROR
+		}
+		nextCell = currentCell
+		toward = NormTowardCoord(src, dest)
+		log.Println("walk: wall ahead, d:", dest, "t:", toward)
+	}
 
 	var speed float32
 	switch {
