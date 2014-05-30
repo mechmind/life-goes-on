@@ -78,9 +78,9 @@ func NextCellCoord(pos, dir UnitCoord) CellCoord {
 	if dir.Y > 0 {
 		joint.Y++
 	}
-	jointDir := joint.Unit().AddCoord(dir.Mult(-1))
+	jointDir := joint.Unit().AddCoord(pos.Mult(-1))
 	crossProd := dir.X*jointDir.Y - dir.Y*jointDir.X
-	next := pos.Cell()
+	next := CellCoord{}
 	if fabs(crossProd) < FLOAT_ERROR {
 		// moving right into joint
 		next = next.Add(sgn(dir.X), sgn(dir.Y))
@@ -109,7 +109,7 @@ func NextCellCoord(pos, dir UnitCoord) CellCoord {
 			next = next.Add(0, -1)
 		}
 	}
-	return next.Bound(LOWER_BOUND, LOWER_BOUND, UPPER_BOUND, UPPER_BOUND)
+	return next
 }
 
 type CellCoord struct {
@@ -128,7 +128,7 @@ func (c CellCoord) AddCoord(add CellCoord) CellCoord {
 	return CellCoord{c.X + add.X, c.Y + add.Y}
 }
 
-func (c CellCoord) Mul(mul int) CellCoord {
+func (c CellCoord) Mult(mul int) CellCoord {
 	return CellCoord{c.X * mul, c.Y * mul}
 }
 
@@ -147,10 +147,45 @@ func (c CellCoord) Bound(lx, ly, hx, hy int) CellCoord {
 func (c CellCoord) Distance(to CellCoord) float32 {
 	dx := c.X - to.X
 	dy := c.Y - to.Y
-	if dx == 0 && dy == 0{
-		return 0
-	}
 	return float32(math.Sqrt(float64(dx*dx + dy*dy)))
+}
+
+func (c CellCoord) ClockwiseSibling() CellCoord {
+	if c.X == 0 && c.Y == 0 {
+		return c
+	}
+
+	if c.X == 0 {
+		return c.Add(c.Y, 0)
+	}
+
+	if c.Y == 0 {
+		return c.Add(0, -c.X)
+	}
+
+	if c.X + c.Y == 0 {
+		return CellCoord{0, c.Y}
+	}
+	return CellCoord{c.X, 0}
+}
+
+func (c CellCoord) CounterclockwiseSibling() CellCoord {
+	if c.X == 0 && c.Y == 0 {
+		return c
+	}
+
+	if c.X == 0 {
+		return c.Add(-c.Y, 0)
+	}
+
+	if c.Y == 0 {
+		return c.Add(0, c.X)
+	}
+
+	if c.X + c.Y == 0 {
+		return CellCoord{c.X, 0}
+	}
+	return CellCoord{0, c.Y}
 }
 
 func CheckCellCoordBounds(value, low, high CellCoord) bool {

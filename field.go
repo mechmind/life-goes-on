@@ -1,15 +1,31 @@
 package main
 
-import ()
+import (
+	"log"
+)
 
 const (
 	FLOAT_ERROR           = 0.000001
 	FIELD_BACKBUFFER_SIZE = 3
 )
 
+const (
+	SLOPE_UP, SLOPE_UP_SHIFT = 1 << iota, iota
+	SLOPE_RIGHT, SLOPE_RIGHT_SHIFT
+	SLOPE_DOWN, SLOPE_DOWN_SHIFT
+	SLOPE_LEFT, SLOPE_LEFT_SHIFT
+)
+
+const (
+	PS_PASSABLE = Passability(iota)
+	PS_IMPASSABLE
+)
+
 var nopAgent NopAgent
 
 var fieldBackbuffer = make(chan *Field, FIELD_BACKBUFFER_SIZE)
+
+type Passability int
 
 type Field struct {
 	xSize, ySize int
@@ -25,6 +41,7 @@ type Field struct {
 func NewField(xSize, ySize int, updates chan *Field) *Field {
 	field := &Field{xSize, ySize, make([]Cell, xSize*ySize), nil, nil, updates, nil}
 	field.makePassableField()
+	field.computeSlopes()
 	return field
 }
 
@@ -109,7 +126,7 @@ func (f *Field) HaveLOS(from, to UnitCoord) bool {
 
 	current := from
 	for {
-		// always check next and current cell passability because we can advance 2 cells 
+		// always check next and current cell passability because we can advance 2 cells
 		// on one step
 		if f.CellAt(current.Cell()).passable == false {
 			return false
@@ -119,7 +136,7 @@ func (f *Field) HaveLOS(from, to UnitCoord) bool {
 			return true
 		}
 
-		nextCell := NextCellCoord(from, toward)
+		nextCell := from.Cell().AddCoord(NextCellCoord(from, toward)).Bound(0, 0, 1024, 1024)
 		if f.CellAt(nextCell).passable == false {
 			return false
 		}
@@ -130,6 +147,31 @@ func (f *Field) HaveLOS(from, to UnitCoord) bool {
 			current = current.AddCoord(toward)
 		}
 	}
+}
+
+func (f *Field) CheckPassability(src, dst CellCoord) Passability {
+	dstCell := f.CellAt(dst)
+	srcCell := f.CellAt(src)
+	if ! dstCell.passable {
+		log.Println("field: cannot pass to dst", dst, "- is a wall")
+		return PS_IMPASSABLE
+	}
+	if iabs(int(srcCell.elevation - dstCell.elevation)) > 2 {
+		log.Println("field: cannot pass to dst", dst, "- elevation is too high")
+		return PS_IMPASSABLE
+	}
+	if src.Distance(dst) > 1 {
+		// diagonal move
+		direction := dst.AddCoord(src.Mult(-1))
+		s1 := src.AddCoord(direction.ClockwiseSibling())
+		s2 := src.AddCoord(direction.CounterclockwiseSibling())
+		log.Println("field: d:", direction, "siblings:", s1, s2)
+		if ! f.CellAt(s1).passable || ! f.CellAt(s2).passable {
+			log.Println("field: cannot pass to dst", dst, "- diagonal move with blocking siblings")
+			return PS_IMPASSABLE
+		}
+	}
+	return PS_PASSABLE
 }
 
 func (f *Field) MoveMe(id int, coord UnitCoord) UnitCoord {
@@ -162,6 +204,33 @@ func (f *Field) makePassableField() {
 	}
 }
 
+func (f *Field) computeSlopes() {
+	// slope is made when elevation level of adjacent cell is greater by 1 from current cell
+	for i := 0; i < f.xSize-1; i++ {
+		for j := 0; j < f.ySize-1; j++ {
+			// compare cell with right and down neighbours
+			coord := CellCoord{i, j}
+			cell := f.CellAt(coord)
+			right := f.CellAt(coord.Add(1, 0))
+			down := f.CellAt(coord.Add(0, 1))
+
+			switch cell.elevation - right.elevation {
+			case 1:
+				right.slopes |= SLOPE_LEFT
+			case -1:
+				cell.slopes |= SLOPE_RIGHT
+			}
+
+			switch cell.elevation - down.elevation {
+			case 1:
+				down.slopes |= SLOPE_UP
+			case -1:
+				cell.slopes |= SLOPE_DOWN
+			}
+		}
+	}
+}
+
 type UnitPresence struct {
 	coord UnitCoord
 	agent Agent
@@ -170,6 +239,7 @@ type UnitPresence struct {
 
 type Cell struct {
 	elevation int16
+	slopes    uint8
 	passable  bool
 	object    Object
 	items     []Item

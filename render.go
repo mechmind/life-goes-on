@@ -117,7 +117,7 @@ func drawField(f *Field, pos CellCoord) {
 	for i := pos.X; i < upperBound.X; i++ {
 		for j := pos.Y; j < upperBound.Y; j++ {
 			tileCell := CellCoord{i, j}
-			screenPos := tileCell.AddCoord(pos.Mul(-1))
+			screenPos := tileCell.AddCoord(pos.Mult(-1))
 			if !CheckCellCoordBounds(tileCell, fieldZero, fieldMax) {
 				termbox.SetCell(screenPos.X, screenPos.Y, TUI_OFFSCREEN_CHAR,
 					TUI_DEFAULT_FG, TUI_DEFAULT_BG)
@@ -141,7 +141,7 @@ func drawField(f *Field, pos CellCoord) {
 			continue
 		}
 		ch, fg, bg := getUnitView(up.unit)
-		screenPos := unitCell.AddCoord(pos.Mul(-1))
+		screenPos := unitCell.AddCoord(pos.Mult(-1))
 
 		termbox.SetCell(screenPos.X, screenPos.Y, ch, fg, bg)
 	}
@@ -154,7 +154,7 @@ func drawField(f *Field, pos CellCoord) {
 			if !CheckCellCoordBounds(coord, pos, upperBound) {
 				continue
 			}
-			screenPos := coord.AddCoord(pos.Mul(-1))
+			screenPos := coord.AddCoord(pos.Mult(-1))
 			switch {
 			case cell.closed:
 				termbox.SetCell(screenPos.X, screenPos.Y, TUI_FLAT_CHAR,
@@ -168,7 +168,7 @@ func drawField(f *Field, pos CellCoord) {
 			if !CheckCellCoordBounds(coord, pos, upperBound) {
 				continue
 			}
-			screenPos := coord.AddCoord(pos.Mul(-1))
+			screenPos := coord.AddCoord(pos.Mult(-1))
 			termbox.SetCell(screenPos.X, screenPos.Y, TUI_FLAT_CHAR,
 				TUI_DEFAULT_FG, TUI_PATHFIND_PATH_BG)
 		}

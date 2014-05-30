@@ -69,56 +69,78 @@ type Walker struct {
 
 func (w *Walker) MoveToward(f *Field, src, dest UnitCoord) UnitCoord {
 	toward := NormTowardCoord(src, dest)
-	nextCellCoord := NextCellCoord(src, toward)
+	direction := NextCellCoord(src, toward)
 	currentCellCoord := src.Cell()
 	currentCell := f.CellAt(currentCellCoord)
-	nextCell := f.CellAt(nextCellCoord)
-	log.Println("walk:", src, "/", currentCellCoord, "->", dest, "/", nextCellCoord)
-	if nextCell.passable == false {
-		// cell is not passable, crawl at edge of cell
-		switch dx := nextCellCoord.X - currentCellCoord.X; {
-		case dx < 0:
-			dest.X = float32(currentCellCoord.X) + FLOAT_ERROR
-		case dx > 0:
-			dest.X = float32(nextCellCoord.X) - FLOAT_ERROR
-		}
-		switch dy := nextCellCoord.Y - currentCellCoord.Y; {
-		case dy < 0:
-			dest.Y = float32(currentCellCoord.Y) + FLOAT_ERROR
-		case dy > 0:
-			dest.Y = float32(nextCellCoord.Y) - FLOAT_ERROR
-		}
-		nextCell = currentCell
-		toward = NormTowardCoord(src, dest)
-		log.Println("walk: wall ahead, d:", dest, "t:", toward)
+	cost := calcSlopeCost(direction, currentCell.slopes)
+
+	log.Println("mover:", src, "->", dest, "d:", direction, "t:", toward)
+	var energy float32
+	switch cost {
+	case -1:
+		energy = w.WalkDownSpeed
+	case 0:
+		energy = w.WalkSpeed
+	case 1:
+		energy = w.WalkUpSpeed
 	}
 
-	var speed float32
-	switch {
-	case currentCell.elevation == nextCell.elevation:
-		// walking straight
-		speed = w.WalkSpeed
-	case currentCell.elevation > nextCell.elevation:
-		// walking down
-		speed = w.WalkDownSpeed
-	case currentCell.elevation < nextCell.elevation:
-		// walking up
-		speed = w.WalkUpSpeed
+	targetDistance := src.Distance(dest)
+	if targetDistance < energy {
+		energy = targetDistance
 	}
 
-	// advance
-	nextPos := src.AddCoord(toward.Mult(speed))
-	if src.Distance(nextPos) < src.Distance(dest) {
-		return nextPos
-	} else {
-		return dest
+	distance := toward.Mult(energy)
+	next := src.AddCoord(distance)
+	nextCellCoord := next.Cell()
+	if nextCellCoord != currentCellCoord {
+		// crossed bound, so check edge passability
+		log.Println("mover: crossing bounds", currentCellCoord, "->", nextCellCoord)
+		stepCoord := currentCellCoord.AddCoord(direction)
+		pass := f.CheckPassability(currentCellCoord, stepCoord)
+		if pass == PS_PASSABLE {
+			// ok moving in
+			// check if have transit cell
+			log.Println("mover: can cross", currentCellCoord, "->", stepCoord)
+			if stepCoord != nextCellCoord {
+				// have a transit cell
+				pass = f.CheckPassability(stepCoord, nextCellCoord)
+				if pass != PS_PASSABLE {
+					// stuck in transit cell
+					// move into it and hang around edge
+					// may help pathing algo
+					var scale float32
+					if direction.X != 0 {
+						if direction.X > 0 {
+							scale = (float32(stepCoord.X) - src.X) / distance.X
+						} else {
+							scale = (float32(currentCellCoord.X) - src.X) / distance.X
+						}
+					} else {
+						if direction.Y > 0 {
+							scale = (float32(stepCoord.Y) - src.Y) / distance.Y
+						} else {
+							scale = (float32(currentCellCoord.Y) - src.Y) / distance.Y
+						}
+					}
+					scale += FLOAT_ERROR
+					next = src.AddCoord(distance.Mult(scale))
+				}
+			}
+		} else {
+			// just hang there if cannot pass into next cell
+			next = src
+			log.Println("mover: shall not pass", currentCellCoord, "->", nextCellCoord)
+		}
 	}
+
+	return next
 }
 
 func (w *Walker) MoveAway(f *Field, src, dest UnitCoord) UnitCoord {
 	toward := NormTowardCoord(src, dest)
 	away := toward.Mult(-1)
-	nextCellCoord := NextCellCoord(src, away)
+	nextCellCoord := src.Cell().AddCoord(NextCellCoord(src, away)).Bound(0, 0, 1024, 1024)
 	currentCell := f.CellAt(src.Cell())
 	nextCell := f.CellAt(nextCellCoord)
 
@@ -142,6 +164,17 @@ func (w *Walker) MoveAway(f *Field, src, dest UnitCoord) UnitCoord {
 	} else {
 		return dest.Bound(LOWER_BOUND, LOWER_BOUND, UPPER_BOUND, UPPER_BOUND)
 	}
+}
+
+// calcSlopeCost return 1 for moving up on slope, -1 for moving down on slope
+func calcSlopeCost(direction CellCoord, slope uint8) int {
+	var cost int
+	// check horizontal movement
+	cost += (int((slope & SLOPE_DOWN) >> SLOPE_DOWN_SHIFT) -
+		int((slope & SLOPE_UP) >> SLOPE_UP_SHIFT)) * direction.X
+	cost += (int((slope & SLOPE_DOWN) >> SLOPE_DOWN_SHIFT) -
+		int((slope & SLOPE_UP) >> SLOPE_UP_SHIFT)) * direction.Y
+	return ibound(cost, -1, 1)
 }
 
 type Possesser struct {

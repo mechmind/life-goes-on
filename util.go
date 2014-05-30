@@ -34,6 +34,13 @@ func ibound(value, low, high int) int {
 	return value
 }
 
+func iabs(i int) int {
+	if i < 0 {
+		return -i
+	}
+	return i
+}
+
 func sgn(value float32) int {
 	if value < 0 {
 		return -1

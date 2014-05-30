@@ -147,6 +147,7 @@ func (p *PathFinder) backtrackPath() Path {
 
 func setVisibility(neighbours []PathCell) {
 	// diagonal cells are not passable if adjacent edge cells are impassable
+	// TODO: use Field.CheckPassability
 	if !neighbours[0].visible {
 		neighbours[1].visible = false
 		neighbours[7].visible = false
