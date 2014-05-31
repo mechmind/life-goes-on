@@ -28,6 +28,11 @@ const (
 	SOL_BASE_HEALTH    = 100
 	SOL_GUN_DAMAGE     = 10
 	SOL_GUN_RANGE      = 15
+	SOL_GREN_DAMAGE    = 80
+	SOL_GREN_RANGE     = 20
+	SOL_GREN_RADIUS    = 6
+	SOL_GREN_SPEED     = 3
+	SOL_GREN_TICK_CAP  = 3
 	SOL_SEMIFIRE_TICKS = 2
 
 	DAM_MOVER_WALK      = 0.30
@@ -192,12 +197,12 @@ type Soldier struct {
 	Possesser
 	Chaser
 	Gunner
-	field  *Field
-	id     int
-	health float32
+	field           *Field
+	id              int
+	health          float32
 	semifireCounter int8
-	target UnitCoord
-	path   Path
+	target          UnitCoord
+	path            Path
 }
 
 func NewSoldier(field *Field) *Soldier {

@@ -32,10 +32,13 @@ type Field struct {
 
 	// FIXME(pathfind): remove after debugging
 	pathfinder *PathFinder
+
+	// moving stuff
+	grens []FlyingGren
 }
 
 func NewField(xSize, ySize int, updates chan *Field) *Field {
-	field := &Field{xSize, ySize, make([]Cell, xSize*ySize), nil, nil, updates, nil}
+	field := &Field{xSize, ySize, make([]Cell, xSize*ySize), nil, nil, updates, nil, nil}
 	field.makePassableField()
 	field.computeSlopes()
 	return field
@@ -46,12 +49,13 @@ func copyField(f *Field) *Field {
 	select {
 	case bb = <-fieldBackbuffer:
 	default:
-		bb = &Field{f.xSize, f.ySize, make([]Cell, f.xSize*f.ySize), nil, nil, nil, nil}
+		bb = &Field{f.xSize, f.ySize, make([]Cell, f.xSize*f.ySize), nil, nil, nil, nil, nil}
 	}
 
 	copy(bb.cells, f.cells)
 	bb.units = append(bb.units[:0], f.units...)
 	bb.agents = append(bb.agents[:0], f.agents...)
+	bb.grens = append(bb.grens[:0], f.grens...)
 	bb.pathfinder = f.pathfinder // FIXME(pathfind)
 	bb.updates = fieldBackbuffer
 
@@ -69,6 +73,38 @@ func (f *Field) Tick(tick int64) {
 
 	for _, up := range f.units {
 		up.agent.HandleUnit(view, up.unit, up.coord)
+	}
+
+	// handle exploded grens
+	for i := 0; i < len(f.grens); {
+		if f.grens[i].booming == SOL_GREN_TICK_CAP {
+			// remove that gren
+			copy(f.grens[i:], f.grens[i+1:])
+			f.grens = f.grens[:len(f.grens)-1]
+			continue
+		} else if f.grens[i].booming > 0 {
+			f.grens[i].booming++
+		}
+		i++
+	}
+
+	// handle flying grens
+	for idx, gren := range f.grens {
+		toward := NormTowardCoord(gren.from, gren.to).Mult(SOL_GREN_SPEED)
+		if gren.from.Distance(gren.to) < FLOAT_ERROR && f.grens[idx].booming == 0 {
+			// BOOM
+			f.grens[idx].booming = 1 // for animation
+			for _, u := range view.UnitsInRange(gren.to, SOL_GREN_RADIUS) {
+				if f.HaveLOS(u.coord, gren.to) {
+					u.unit.RecieveDamage(-1, SOL_GREN_DAMAGE)
+				}
+			}
+		}
+		if gren.from.Distance(gren.to) < toward.Distance(UnitCoord{0, 0}) {
+			f.grens[idx].from = gren.to
+		} else {
+			f.grens[idx].from = gren.from.AddCoord(toward)
+		}
 	}
 
 	select {
@@ -183,6 +219,10 @@ func (f *Field) KillMe(id int) {
 		unit: &Corpse{f, id, unit, 0}}
 }
 
+func (f *Field) ThrowGren(from, to UnitCoord) {
+	f.grens = append(f.grens, FlyingGren{from, to, 0})
+}
+
 func (f *Field) FindPath(from, to CellCoord) Path {
 	finder := NewPathFinder(f)
 	path := finder.FindPath(from, to)
@@ -239,4 +279,9 @@ type Cell struct {
 	passable  bool
 	object    Object
 	items     []Item
+}
+
+type FlyingGren struct {
+	from, to UnitCoord
+	booming  int8
 }

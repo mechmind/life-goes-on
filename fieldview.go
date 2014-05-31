@@ -45,6 +45,14 @@ func (f *FieldView) FindPath(from, to CellCoord) Path {
 	return f.field.FindPath(from, to)
 }
 
+func (f *FieldView) HaveLOS(from, to UnitCoord) bool {
+	return f.field.HaveLOS(from, to)
+}
+
+func (f *FieldView) ThrowGren(from, to UnitCoord) {
+	f.field.ThrowGren(from, to)
+}
+
 // unitsByDistance used to sort units on field, nearest to src first
 type unitsByDistance struct {
 	src   UnitCoord

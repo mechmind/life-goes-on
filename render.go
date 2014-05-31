@@ -33,10 +33,13 @@ const (
 
 	// squad HUD
 	TUI_MOVE_TARGET_CHAR = '+'
-	TUI_MOVE_TARGET_FG = termbox.ColorGreen | termbox.AttrBold
+	TUI_MOVE_TARGET_FG   = termbox.ColorGreen | termbox.AttrBold
 
 	TUI_GREN_TARGET_CHAR = '*'
-	TUI_GREN_TARGET_FG = termbox.ColorRed | termbox.AttrBold
+	TUI_GREN_TARGET_FG   = termbox.ColorRed | termbox.AttrBold
+
+	TUI_FLYING_GREN_TARGET_CHAR = '*'
+	TUI_FLYING_GREN_TARGET_FG   = termbox.ColorYellow
 
 	// FIXME(pathfind)
 	TUI_PATHFIND_OPEN_BG   = termbox.ColorCyan
@@ -45,6 +48,16 @@ const (
 
 	TUI_CURSOR_MARGIN = 5
 )
+
+var boomingColors = [SOL_GREN_TICK_CAP + 1]struct {
+	fg, bg termbox.Attribute
+	ch     rune
+}{
+	{},
+	{termbox.ColorWhite, termbox.ColorWhite, ' '},
+	{termbox.ColorYellow, termbox.ColorYellow, ' '},
+	{termbox.ColorRed, termbox.ColorDefault, '*'},
+}
 
 func pollEvents(events chan termbox.Event) {
 	for {
@@ -98,9 +111,9 @@ func toggleFireState(fs int) int {
 
 type squadView struct {
 	fireState int
-	movingTo CellCoord
-	grenTo CellCoord
-	automove bool
+	movingTo  CellCoord
+	grenTo    CellCoord
+	automove  bool
 }
 
 func RunTUI(updates chan *Field, orders chan Order) {
@@ -112,7 +125,7 @@ func RunTUI(updates chan *Field, orders chan Order) {
 
 	var currentPos CellCoord
 	var size = tb2cell()
-	var cursorPos = CellCoord{size.X/2, size.Y/2} // center cursor
+	var cursorPos = CellCoord{size.X / 2, size.Y / 2} // center cursor
 	termbox.SetCursor(cursorPos.X, cursorPos.Y)
 
 	// FIXME: hardcoded squad values
@@ -131,6 +144,14 @@ func RunTUI(updates chan *Field, orders chan Order) {
 			}
 
 			field = newfield
+			// update rendering state
+			// handle grens
+			for _, gren := range field.grens {
+				if gren.from.Cell() == sv.grenTo {
+					sv.grenTo = CellCoord{0, 0}
+					break
+				}
+			}
 			drawField(field, currentPos, sv)
 		case ev := <-events:
 			switch ev.Type {
@@ -176,7 +197,6 @@ func RunTUI(updates chan *Field, orders chan Order) {
 				// move view down
 				case ev.Ch == 'K':
 					cursorPos = cursorPos.Add(0, -TUI_POS_STEP)
-
 
 				// orders
 				case ev.Key == termbox.KeySpace:
@@ -267,6 +287,35 @@ func drawField(f *Field, pos CellCoord, sv squadView) {
 		screenPos := sv.movingTo.AddCoord(pos.Mult(-1))
 		termbox.SetCell(screenPos.X, screenPos.Y, TUI_MOVE_TARGET_CHAR,
 			TUI_MOVE_TARGET_FG, TUI_DEFAULT_BG)
+	}
+
+	// render grens
+	for _, gren := range f.grens {
+		if gren.booming == 0 {
+			// flying gren
+			if CheckCellCoordBounds(gren.from.Cell(), pos, upperBound) {
+				screenPos := gren.from.Cell().AddCoord(pos.Mult(-1))
+				termbox.SetCell(screenPos.X, screenPos.Y, TUI_FLYING_GREN_TARGET_CHAR,
+					TUI_FLYING_GREN_TARGET_FG, TUI_DEFAULT_BG)
+			}
+		} else {
+			// explosion
+			center := gren.to
+			for i := -SOL_GREN_RADIUS; i <= SOL_GREN_RADIUS; i++ {
+				for j := -SOL_GREN_RADIUS; j <= SOL_GREN_RADIUS; j++ {
+					cellCoord := center.Cell().Add(i, j)
+					screenPos := cellCoord.AddCoord(pos.Mult(-1))
+					if CheckCellCoordBounds(screenPos, pos, upperBound) &&
+						center.Distance(cellCoord.UnitCenter()) < SOL_GREN_RADIUS &&
+						f.HaveLOS(center, cellCoord.UnitCenter()) {
+						// in a range and visible
+						boomingView := boomingColors[gren.booming]
+						termbox.SetCell(screenPos.X, screenPos.Y,
+							boomingView.ch, boomingView.fg, boomingView.bg)
+					}
+				}
+			}
+		}
 	}
 
 	if (sv.grenTo != CellCoord{0, 0}) && CheckCellCoordBounds(sv.grenTo, pos, upperBound) {

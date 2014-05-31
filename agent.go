@@ -22,12 +22,12 @@ type Thinker interface {
 }
 
 type Squad struct {
-	units  []*Soldier
-	target UnitCoord
-	automove bool
-	orders chan Order
+	units     []*Soldier
+	target    UnitCoord
+	automove  bool
+	orders    chan Order
 	fireState int
-	grenTo CellCoord
+	grenTo    CellCoord
 }
 
 func (s *Squad) AttachUnit(u Unit) {
@@ -54,8 +54,18 @@ func (s *Squad) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
 		soldier.semifireCounter--
 	}
 
-	if (s.fireState == ORDER_FIRE ||
-		(s.fireState == ORDER_SEMIFIRE && soldier.semifireCounter == 0)) {
+	if s.grenTo != (CellCoord{0, 0}) {
+		grenTo := s.grenTo.UnitCenter()
+		if coord.Distance(grenTo) < SOL_GREN_RANGE && f.HaveLOS(coord, grenTo) {
+			// throw gren
+			s.grenTo = CellCoord{0, 0}
+			f.ThrowGren(coord, grenTo)
+			return
+		}
+	}
+
+	if s.fireState == ORDER_FIRE ||
+		(s.fireState == ORDER_SEMIFIRE && soldier.semifireCounter == 0) {
 		byDistance := f.UnitsInRange(coord, soldier.Gunner.fireRange)
 		// check any zeds nearby
 		for _, zed := range byDistance {

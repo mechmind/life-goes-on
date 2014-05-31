@@ -39,7 +39,7 @@ func main() {
 
 	//*
 	var orders = make(chan Order, SQUAD_ORDER_QUEUE_LEN)
-	var mainSquad Agent = &Squad{orders: orders}
+	var mainSquad Agent = &Squad{orders: orders, fireState: ORDER_FIRE}
 	var sold1 = NewSoldier(field)
 	//*
 	var sold2 = NewSoldier(field)
