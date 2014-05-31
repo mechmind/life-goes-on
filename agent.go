@@ -24,7 +24,10 @@ type Thinker interface {
 type Squad struct {
 	units  []*Soldier
 	target UnitCoord
+	automove bool
 	orders chan Order
+	fireState int
+	grenTo CellCoord
 }
 
 func (s *Squad) AttachUnit(u Unit) {
@@ -58,6 +61,9 @@ func (s *Squad) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
 		}
 	}
 
+	if s.target.Cell() == (CellCoord{0, 0}) {
+		return
+	}
 	// no zeds in fire range, move toward target
 	if s.target != soldier.target {
 		soldier.target = s.target
@@ -82,27 +88,56 @@ func (s *Squad) Think(view *FieldView, tick int64) {
 		return
 	}
 
-	coord, _ := view.UnitByID(s.units[0].GetID())
-	// make path to nearby zed
-	if tick%SQUAD_RETARGET_TICKS == 0 {
-		byDistance := view.UnitsByDistance(coord)
-		var zed UnitPresence
-		var zedFound bool
-		for id, u := range byDistance {
-			if _, ok := u.unit.(*Zed); ok {
-				zed = byDistance[id]
-				zedFound = true
-				break
+	// read orders
+OrderLoop:
+	for {
+		select {
+		case order := <-s.orders:
+			switch order.order {
+			case ORDER_MOVE:
+				s.target = order.coord.UnitCenter()
+				s.automove = false
+			case ORDER_AUTOMOVE:
+				s.automove = true
+
+			case ORDER_FIRE:
+				fallthrough
+			case ORDER_SEMIFIRE:
+				fallthrough
+			case ORDER_NOFIRE:
+				s.fireState = order.order
+
+			case ORDER_GREN:
+				s.grenTo = order.coord
 			}
+		default:
+			break OrderLoop
 		}
+	}
 
-		if !zedFound {
-			// nothing to do
-			return
+	if s.automove {
+		coord, _ := view.UnitByID(s.units[0].GetID())
+		// make path to nearby zed
+		if tick%SQUAD_RETARGET_TICKS == 0 {
+			byDistance := view.UnitsByDistance(coord)
+			var zed UnitPresence
+			var zedFound bool
+			for id, u := range byDistance {
+				if _, ok := u.unit.(*Zed); ok {
+					zed = byDistance[id]
+					zedFound = true
+					break
+				}
+			}
+
+			if !zedFound {
+				// nothing to do
+				return
+			}
+
+			// chase toward zed
+			s.target = zed.coord
 		}
-
-		// chase toward zed
-		s.target = zed.coord
 	}
 }
 

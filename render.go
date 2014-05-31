@@ -100,6 +100,7 @@ type squadView struct {
 	fireState int
 	movingTo CellCoord
 	grenTo CellCoord
+	automove bool
 }
 
 func RunTUI(updates chan *Field, orders chan Order) {
@@ -181,6 +182,7 @@ func RunTUI(updates chan *Field, orders chan Order) {
 				case ev.Key == termbox.KeySpace:
 					sendOrder(orders, Order{ORDER_MOVE, cursorPos})
 					sv.movingTo = cursorPos
+					sv.automove = false
 
 				case ev.Ch == 'g':
 					fallthrough
@@ -193,6 +195,12 @@ func RunTUI(updates chan *Field, orders chan Order) {
 				case ev.Ch == 'F':
 					sv.fireState = toggleFireState(sv.fireState)
 					sendOrder(orders, Order{sv.fireState, cursorPos})
+
+				case ev.Ch == 'p':
+					fallthrough
+				case ev.Ch == 'P':
+					sendOrder(orders, Order{ORDER_AUTOMOVE, cursorPos})
+					sv.automove = true
 
 				// quit
 				case ev.Ch == 'q':
