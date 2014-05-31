@@ -10,5 +10,5 @@ const (
 
 type Order struct {
 	order int
-	coord UnitCoord
+	coord CellCoord
 }

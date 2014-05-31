@@ -5,8 +5,9 @@ import (
 )
 
 const (
-	DAMSEL_WANDER_RADIUS = 40
-	SQUAD_RETARGET_TICKS = 30
+	DAMSEL_WANDER_RADIUS  = 40
+	SQUAD_RETARGET_TICKS  = 30
+	SQUAD_ORDER_QUEUE_LEN = 16
 )
 
 type Agent interface {

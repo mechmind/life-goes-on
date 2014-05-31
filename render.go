@@ -31,6 +31,13 @@ const (
 
 	TUI_POS_STEP = 5
 
+	// squad HUD
+	TUI_MOVE_TARGET_CHAR = '+'
+	TUI_MOVE_TARGET_FG = termbox.ColorGreen | termbox.AttrBold
+
+	TUI_GREN_TARGET_CHAR = '*'
+	TUI_GREN_TARGET_FG = termbox.ColorRed | termbox.AttrBold
+
 	// FIXME(pathfind)
 	TUI_PATHFIND_OPEN_BG   = termbox.ColorCyan
 	TUI_PATHFIND_CLOSED_BG = termbox.ColorYellow
@@ -69,6 +76,32 @@ func handleCursorMove(size, pos, cursor CellCoord) CellCoord {
 	return pos
 }
 
+func sendOrder(orders chan Order, o Order) {
+	select {
+	case orders <- o:
+	default:
+	}
+}
+
+func toggleFireState(fs int) int {
+	switch fs {
+	case ORDER_FIRE:
+		return ORDER_SEMIFIRE
+	case ORDER_SEMIFIRE:
+		return ORDER_NOFIRE
+	case ORDER_NOFIRE:
+		return ORDER_FIRE
+	default:
+		return ORDER_FIRE
+	}
+}
+
+type squadView struct {
+	fireState int
+	movingTo CellCoord
+	grenTo CellCoord
+}
+
 func RunTUI(updates chan *Field, orders chan Order) {
 	var events = make(chan termbox.Event)
 	go pollEvents(events)
@@ -80,6 +113,9 @@ func RunTUI(updates chan *Field, orders chan Order) {
 	var size = tb2cell()
 	var cursorPos = CellCoord{size.X/2, size.Y/2} // center cursor
 	termbox.SetCursor(cursorPos.X, cursorPos.Y)
+
+	// FIXME: hardcoded squad values
+	var sv = squadView{fireState: ORDER_FIRE}
 
 	// recieve field view first
 	var field = <-updates
@@ -94,7 +130,7 @@ func RunTUI(updates chan *Field, orders chan Order) {
 			}
 
 			field = newfield
-			drawField(field, currentPos)
+			drawField(field, currentPos, sv)
 		case ev := <-events:
 			switch ev.Type {
 			case termbox.EventKey:
@@ -141,6 +177,23 @@ func RunTUI(updates chan *Field, orders chan Order) {
 					cursorPos = cursorPos.Add(0, -TUI_POS_STEP)
 
 
+				// orders
+				case ev.Key == termbox.KeySpace:
+					sendOrder(orders, Order{ORDER_MOVE, cursorPos})
+					sv.movingTo = cursorPos
+
+				case ev.Ch == 'g':
+					fallthrough
+				case ev.Ch == 'G':
+					sendOrder(orders, Order{ORDER_GREN, cursorPos})
+					sv.grenTo = cursorPos
+
+				case ev.Ch == 'f':
+					fallthrough
+				case ev.Ch == 'F':
+					sv.fireState = toggleFireState(sv.fireState)
+					sendOrder(orders, Order{sv.fireState, cursorPos})
+
 				// quit
 				case ev.Ch == 'q':
 					return
@@ -148,20 +201,20 @@ func RunTUI(updates chan *Field, orders chan Order) {
 				currentPos = handleCursorMove(size, currentPos, cursorPos)
 				relativeCursorPos := cursorPos.AddCoord(currentPos.Mult(-1))
 				termbox.SetCursor(relativeCursorPos.X, relativeCursorPos.Y)
-				drawField(field, currentPos)
+				drawField(field, currentPos, sv)
 			case termbox.EventResize:
 				size = tb2cell()
 				currentPos = handleCursorMove(size, currentPos, cursorPos)
 				relativeCursorPos := cursorPos.AddCoord(currentPos.Mult(-1))
 				termbox.SetCursor(relativeCursorPos.X, relativeCursorPos.Y)
-				drawField(field, currentPos)
+				drawField(field, currentPos, sv)
 			}
 		}
 	}
 }
 
 // render field chunk that we currently looking at
-func drawField(f *Field, pos CellCoord) {
+func drawField(f *Field, pos CellCoord, sv squadView) {
 	upperBound := tb2cell().Add(-1, -1).AddCoord(pos)
 
 	termbox.Clear(TUI_DEFAULT_FG, TUI_DEFAULT_BG)
@@ -201,6 +254,18 @@ func drawField(f *Field, pos CellCoord) {
 		termbox.SetCell(screenPos.X, screenPos.Y, ch, fg, bg)
 	}
 
+	// render squad state
+	if (sv.movingTo != CellCoord{0, 0}) && CheckCellCoordBounds(sv.movingTo, pos, upperBound) {
+		screenPos := sv.movingTo.AddCoord(pos.Mult(-1))
+		termbox.SetCell(screenPos.X, screenPos.Y, TUI_MOVE_TARGET_CHAR,
+			TUI_MOVE_TARGET_FG, TUI_DEFAULT_BG)
+	}
+
+	if (sv.grenTo != CellCoord{0, 0}) && CheckCellCoordBounds(sv.grenTo, pos, upperBound) {
+		screenPos := sv.grenTo.AddCoord(pos.Mult(-1))
+		termbox.SetCell(screenPos.X, screenPos.Y, TUI_GREN_TARGET_CHAR,
+			TUI_GREN_TARGET_FG, TUI_DEFAULT_BG)
+	}
 	// render pathfind
 	// FIXME(pathfind)
 	if p := f.pathfinder; p != nil {
