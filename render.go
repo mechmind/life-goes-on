@@ -35,6 +35,8 @@ const (
 	TUI_PATHFIND_OPEN_BG   = termbox.ColorCyan
 	TUI_PATHFIND_CLOSED_BG = termbox.ColorYellow
 	TUI_PATHFIND_PATH_BG   = termbox.ColorRed
+
+	TUI_CURSOR_MARGIN = 5
 )
 
 func pollEvents(events chan termbox.Event) {
@@ -43,7 +45,31 @@ func pollEvents(events chan termbox.Event) {
 	}
 }
 
-func RunTUI(updates chan *Field) {
+func tb2cell() CellCoord {
+	x, y := termbox.Size()
+	return CellCoord{x, y}
+}
+
+func handleCursorMove(size, pos, cursor CellCoord) CellCoord {
+	low := pos.Add(TUI_CURSOR_MARGIN, TUI_CURSOR_MARGIN)
+	high := pos.AddCoord(size).Add(-TUI_CURSOR_MARGIN, -TUI_CURSOR_MARGIN)
+	if !CheckCellCoordBounds(cursor, low, high) {
+		// cursor is too close to border, move window
+		switch {
+		case cursor.X < low.X:
+			pos.X -= TUI_POS_STEP
+		case cursor.X > high.X:
+			pos.X += TUI_POS_STEP
+		case cursor.Y < low.Y:
+			pos.Y -= TUI_POS_STEP
+		case cursor.Y > high.Y:
+			pos.Y += TUI_POS_STEP
+		}
+	}
+	return pos
+}
+
+func RunTUI(updates chan *Field, orders chan Order) {
 	var events = make(chan termbox.Event)
 	go pollEvents(events)
 
@@ -51,6 +77,9 @@ func RunTUI(updates chan *Field) {
 	defer termbox.Close()
 
 	var currentPos CellCoord
+	var size = tb2cell()
+	var cursorPos = CellCoord{size.X/2, size.Y/2} // center cursor
+	termbox.SetCursor(cursorPos.X, cursorPos.Y)
 
 	// recieve field view first
 	var field = <-updates
@@ -74,30 +103,57 @@ func RunTUI(updates chan *Field) {
 				case ev.Ch == 'h':
 					fallthrough
 				case ev.Key == termbox.KeyArrowLeft:
-					currentPos = currentPos.Add(-TUI_POS_STEP, 0)
+					cursorPos = cursorPos.Add(-1, 0)
 
 				// move view right
 				case ev.Ch == 'l':
 					fallthrough
 				case ev.Key == termbox.KeyArrowRight:
-					currentPos = currentPos.Add(TUI_POS_STEP, 0)
+					cursorPos = cursorPos.Add(1, 0)
 
 				// move view up
 				case ev.Ch == 'j':
 					fallthrough
 				case ev.Key == termbox.KeyArrowDown:
-					currentPos = currentPos.Add(0, TUI_POS_STEP)
+					cursorPos = cursorPos.Add(0, 1)
 
 				// move view down
 				case ev.Ch == 'k':
 					fallthrough
 				case ev.Key == termbox.KeyArrowUp:
-					currentPos = currentPos.Add(0, -TUI_POS_STEP)
+					cursorPos = cursorPos.Add(0, -1)
+
+				// big leaps
+				// move view left
+				case ev.Ch == 'H':
+					cursorPos = cursorPos.Add(-TUI_POS_STEP, 0)
+
+				// move view right
+				case ev.Ch == 'L':
+					cursorPos = cursorPos.Add(TUI_POS_STEP, 0)
+
+				// move view up
+				case ev.Ch == 'J':
+					cursorPos = cursorPos.Add(0, TUI_POS_STEP)
+
+				// move view down
+				case ev.Ch == 'K':
+					cursorPos = cursorPos.Add(0, -TUI_POS_STEP)
+
 
 				// quit
 				case ev.Ch == 'q':
 					return
 				}
+				currentPos = handleCursorMove(size, currentPos, cursorPos)
+				relativeCursorPos := cursorPos.AddCoord(currentPos.Mult(-1))
+				termbox.SetCursor(relativeCursorPos.X, relativeCursorPos.Y)
+				drawField(field, currentPos)
+			case termbox.EventResize:
+				size = tb2cell()
+				currentPos = handleCursorMove(size, currentPos, cursorPos)
+				relativeCursorPos := cursorPos.AddCoord(currentPos.Mult(-1))
+				termbox.SetCursor(relativeCursorPos.X, relativeCursorPos.Y)
 				drawField(field, currentPos)
 			}
 		}
@@ -106,8 +162,7 @@ func RunTUI(updates chan *Field) {
 
 // render field chunk that we currently looking at
 func drawField(f *Field, pos CellCoord) {
-	sizex, sizey := termbox.Size()
-	upperBound := pos.Add(sizex-1, sizey-1)
+	upperBound := tb2cell().Add(-1, -1).AddCoord(pos)
 
 	termbox.Clear(TUI_DEFAULT_FG, TUI_DEFAULT_BG)
 

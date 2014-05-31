@@ -38,7 +38,8 @@ func main() {
 	}
 
 	//*
-	var mainSquad Agent = &Squad{}
+	var orders = make(chan Order)
+	var mainSquad Agent = &Squad{orders: orders}
 	var sold1 = NewSoldier(field)
 	//*
 	var sold2 = NewSoldier(field)
@@ -92,5 +93,5 @@ func main() {
 	//field.PlaceUnit(UnitCoord{4.97, 14.95}, crowd, dam)
 
 	go time.Run()
-	RunTUI(updates)
+	RunTUI(updates, orders)
 }

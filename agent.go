@@ -23,6 +23,7 @@ type Thinker interface {
 type Squad struct {
 	units  []*Soldier
 	target UnitCoord
+	orders chan Order
 }
 
 func (s *Squad) AttachUnit(u Unit) {
