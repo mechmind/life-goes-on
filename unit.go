@@ -50,7 +50,7 @@ type Unit interface {
 }
 
 type Mover interface {
-	MoveToward(src, dest UnitCoord) UnitCoord
+	MoveToward(src, dest UnitCoord) (UnitCoord, bool)
 }
 
 type DamageReciever interface {
@@ -63,7 +63,7 @@ type Walker struct {
 	WalkDownSpeed float32
 }
 
-func (w *Walker) MoveToward(f *Field, src, dest UnitCoord) UnitCoord {
+func (w *Walker) MoveToward(f *Field, src, dest UnitCoord) (UnitCoord, bool) {
 	toward := NormTowardCoord(src, dest)
 	direction := NextCellCoord(src, toward)
 	currentCellCoord := src.Cell()
@@ -71,6 +71,7 @@ func (w *Walker) MoveToward(f *Field, src, dest UnitCoord) UnitCoord {
 	cost := calcSlopeCost(direction, currentCell.slopes)
 
 	//log.Println("mover:", src, "->", dest, "d:", direction, "t:", toward)
+	var stuck bool
 	var energy float32
 	switch cost {
 	case -1:
@@ -121,19 +122,21 @@ func (w *Walker) MoveToward(f *Field, src, dest UnitCoord) UnitCoord {
 					}
 					scale += FLOAT_ERROR
 					next = src.AddCoord(distance.Mult(scale))
+					stuck = true
 				}
 			}
 		} else {
 			// just hang there if cannot pass into next cell
 			next = src
+			stuck = true
 			//log.Println("mover: shall not pass", currentCellCoord, "->", nextCellCoord)
 		}
 	}
 
-	return next
+	return next, stuck
 }
 
-func (w *Walker) MoveAway(f *Field, src, dest UnitCoord) UnitCoord {
+func (w *Walker) MoveAway(f *Field, src, dest UnitCoord) (UnitCoord, bool) {
 	newDest := src.AddCoord(src.AddCoord(dest.Mult(-1)))
 	return w.MoveToward(f, src, newDest)
 }
@@ -209,9 +212,9 @@ func (s *Soldier) GetID() int {
 	return s.id
 }
 
-func (s *Soldier) MoveToward(src, dest UnitCoord) UnitCoord {
-	nextCoord := s.Walker.MoveToward(s.field, src, dest)
-	return s.field.MoveMe(s.id, nextCoord)
+func (s *Soldier) MoveToward(src, dest UnitCoord) (UnitCoord, bool) {
+	nextCoord, stuck := s.Walker.MoveToward(s.field, src, dest)
+	return s.field.MoveMe(s.id, nextCoord), stuck
 }
 
 func (s *Soldier) CanShoot(src, dest UnitCoord) bool {
@@ -258,7 +261,7 @@ func (z *Zed) SetID(id int) {
 func (z *Zed) GetID() int {
 	return z.id
 }
-func (z *Zed) MoveToward(src, dest UnitCoord) UnitCoord {
+func (z *Zed) MoveToward(src, dest UnitCoord) (UnitCoord, bool) {
 	// apply nutrition and rage speedup/slowdown
 	nutr_coeff := z.nutrition / 1000
 	rage_coeff := z.rage * ZED_RAGE_SPEEDUP
@@ -266,9 +269,9 @@ func (z *Zed) MoveToward(src, dest UnitCoord) UnitCoord {
 	z.Walker = Walker{fbound(ZED_MOVER_WALK*all_coeff, 0, 1),
 		fbound(ZED_MOVER_WALKUP*all_coeff, 0, 1),
 		fbound(ZED_MOVER_WALKDOWN*all_coeff, 0, 1)}
-	nextCoord := z.Walker.MoveToward(z.field, src, dest)
+	nextCoord, stuck := z.Walker.MoveToward(z.field, src, dest)
 	z.nutrition -= src.Distance(nextCoord) * ZED_NUTRITION_WALKING
-	return z.field.MoveMe(z.id, nextCoord)
+	return z.field.MoveMe(z.id, nextCoord), stuck
 }
 
 func (z *Zed) Bite(src, dest UnitCoord, victim Unit) {
@@ -339,16 +342,16 @@ func (d *Damsel) GetID() int {
 	return d.id
 }
 
-func (d *Damsel) MoveToward(src, dest UnitCoord) UnitCoord {
+func (d *Damsel) MoveToward(src, dest UnitCoord) (UnitCoord, bool) {
 	d.adjustWalkSpeed()
-	nextCoord := d.Walker.MoveToward(d.field, src, dest)
-	return d.field.MoveMe(d.id, nextCoord)
+	nextCoord, stuck := d.Walker.MoveToward(d.field, src, dest)
+	return d.field.MoveMe(d.id, nextCoord), stuck
 }
 
-func (d *Damsel) MoveAway(src, dest UnitCoord) UnitCoord {
+func (d *Damsel) MoveAway(src, dest UnitCoord) (UnitCoord, bool) {
 	d.adjustWalkSpeed()
-	nextCoord := d.Walker.MoveAway(d.field, src, dest)
-	return d.field.MoveMe(d.id, nextCoord)
+	nextCoord, stuck := d.Walker.MoveAway(d.field, src, dest)
+	return d.field.MoveMe(d.id, nextCoord), stuck
 }
 
 func (d *Damsel) adjustWalkSpeed() {
@@ -404,8 +407,8 @@ func (c *Corpse) GetID() int {
 	return c.id
 }
 
-func (c *Corpse) MoveToward(src, dest UnitCoord) UnitCoord {
-	return src
+func (c *Corpse) MoveToward(src, dest UnitCoord) (UnitCoord, bool) {
+	return src, false
 }
 
 func (c *Corpse) RecieveDamage(from int, dmg float32) {}
