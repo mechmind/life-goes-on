@@ -13,7 +13,7 @@ type PathFinder struct {
 	field          *Field
 	cells          map[CellCoord]PathCell
 	open           *WeightedList
-	path Path
+	path           Path
 }
 
 func NewPathFinder(f *Field) *PathFinder {

@@ -71,7 +71,7 @@ func main() {
 	for idx := 0; idx < TOTAL_DAMSELS; idx++ {
 		var coord UnitCoord
 		for {
-			coord = UnitCoord{rand.Float32() * 100 + 1, rand.Float32() * 100 + 1}
+			coord = UnitCoord{rand.Float32()*100 + 1, rand.Float32()*100 + 1}
 			if field.CellAt(coord.Cell()).passable {
 				break
 			}
@@ -82,11 +82,10 @@ func main() {
 	}
 	//*/
 
-
 	// FIXME(pathfind): debugging
 	// make some obstackles
 	//for i := 5; i < 25; i++ {
-		//field.CellAt(CellCoord{i, 15}).passable = false
+	//field.CellAt(CellCoord{i, 15}).passable = false
 	//}
 	//dam := NewDamsel(field)
 	//dam.wanderTarget = UnitCoord{5.5, 15.5}

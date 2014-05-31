@@ -142,10 +142,10 @@ func (w *Walker) MoveAway(f *Field, src, dest UnitCoord) UnitCoord {
 func calcSlopeCost(direction CellCoord, slope uint8) int {
 	var cost int
 	// check horizontal movement
-	cost += (int((slope & SLOPE_DOWN) >> SLOPE_DOWN_SHIFT) -
-		int((slope & SLOPE_UP) >> SLOPE_UP_SHIFT)) * direction.X
-	cost += (int((slope & SLOPE_DOWN) >> SLOPE_DOWN_SHIFT) -
-		int((slope & SLOPE_UP) >> SLOPE_UP_SHIFT)) * direction.Y
+	cost += (int((slope&SLOPE_DOWN)>>SLOPE_DOWN_SHIFT) -
+		int((slope&SLOPE_UP)>>SLOPE_UP_SHIFT)) * direction.X
+	cost += (int((slope&SLOPE_DOWN)>>SLOPE_DOWN_SHIFT) -
+		int((slope&SLOPE_UP)>>SLOPE_UP_SHIFT)) * direction.Y
 	return ibound(cost, -1, 1)
 }
 

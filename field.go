@@ -148,11 +148,11 @@ func (f *Field) HaveLOS(from, to UnitCoord) bool {
 func (f *Field) CheckPassability(src, dst CellCoord) Passability {
 	dstCell := f.CellAt(dst)
 	srcCell := f.CellAt(src)
-	if ! dstCell.passable {
+	if !dstCell.passable {
 		//log.Println("field: cannot pass to dst", dst, "- is a wall")
 		return PS_IMPASSABLE
 	}
-	if iabs(int(srcCell.elevation - dstCell.elevation)) > 2 {
+	if iabs(int(srcCell.elevation-dstCell.elevation)) > 2 {
 		//log.Println("field: cannot pass to dst", dst, "- elevation is too high")
 		return PS_IMPASSABLE
 	}
@@ -162,7 +162,7 @@ func (f *Field) CheckPassability(src, dst CellCoord) Passability {
 		s1 := src.AddCoord(direction.ClockwiseSibling())
 		s2 := src.AddCoord(direction.CounterclockwiseSibling())
 		//log.Println("field: d:", direction, "siblings:", s1, s2)
-		if ! f.CellAt(s1).passable || ! f.CellAt(s2).passable {
+		if !f.CellAt(s1).passable || !f.CellAt(s2).passable {
 			//log.Println("field: cannot pass to dst", dst, "- diagonal move with blocking siblings")
 			return PS_IMPASSABLE
 		}

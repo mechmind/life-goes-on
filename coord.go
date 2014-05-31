@@ -163,7 +163,7 @@ func (c CellCoord) ClockwiseSibling() CellCoord {
 		return c.Add(0, -c.X)
 	}
 
-	if c.X + c.Y == 0 {
+	if c.X+c.Y == 0 {
 		return CellCoord{0, c.Y}
 	}
 	return CellCoord{c.X, 0}
@@ -182,7 +182,7 @@ func (c CellCoord) CounterclockwiseSibling() CellCoord {
 		return c.Add(0, c.X)
 	}
 
-	if c.X + c.Y == 0 {
+	if c.X+c.Y == 0 {
 		return CellCoord{c.X, 0}
 	}
 	return CellCoord{0, c.Y}
