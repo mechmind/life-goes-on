@@ -1,9 +1,5 @@
 package main
 
-import (
-	"log"
-)
-
 const (
 	FLOAT_ERROR           = 0.000001
 	FIELD_BACKBUFFER_SIZE = 3
@@ -153,11 +149,11 @@ func (f *Field) CheckPassability(src, dst CellCoord) Passability {
 	dstCell := f.CellAt(dst)
 	srcCell := f.CellAt(src)
 	if ! dstCell.passable {
-		log.Println("field: cannot pass to dst", dst, "- is a wall")
+		//log.Println("field: cannot pass to dst", dst, "- is a wall")
 		return PS_IMPASSABLE
 	}
 	if iabs(int(srcCell.elevation - dstCell.elevation)) > 2 {
-		log.Println("field: cannot pass to dst", dst, "- elevation is too high")
+		//log.Println("field: cannot pass to dst", dst, "- elevation is too high")
 		return PS_IMPASSABLE
 	}
 	if src.Distance(dst) > 1 {
@@ -165,9 +161,9 @@ func (f *Field) CheckPassability(src, dst CellCoord) Passability {
 		direction := dst.AddCoord(src.Mult(-1))
 		s1 := src.AddCoord(direction.ClockwiseSibling())
 		s2 := src.AddCoord(direction.CounterclockwiseSibling())
-		log.Println("field: d:", direction, "siblings:", s1, s2)
+		//log.Println("field: d:", direction, "siblings:", s1, s2)
 		if ! f.CellAt(s1).passable || ! f.CellAt(s2).passable {
-			log.Println("field: cannot pass to dst", dst, "- diagonal move with blocking siblings")
+			//log.Println("field: cannot pass to dst", dst, "- diagonal move with blocking siblings")
 			return PS_IMPASSABLE
 		}
 	}

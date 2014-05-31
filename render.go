@@ -150,7 +150,7 @@ func drawField(f *Field, pos CellCoord) {
 	// FIXME(pathfind)
 	if p := f.pathfinder; p != nil {
 		for coord, cell := range p.cells {
-			continue
+			break
 			if !CheckCellCoordBounds(coord, pos, upperBound) {
 				continue
 			}
@@ -165,6 +165,7 @@ func drawField(f *Field, pos CellCoord) {
 			}
 		}
 		for _, coord := range p.path {
+			break
 			if !CheckCellCoordBounds(coord, pos, upperBound) {
 				continue
 			}
