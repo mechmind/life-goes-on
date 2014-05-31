@@ -1,9 +1,5 @@
 package main
 
-import (
-	"log"
-)
-
 const (
 	ZED_NUTRITION_WALKING         = 1
 	ZED_NUTRITION_BITING          = 0.35
@@ -74,7 +70,7 @@ func (w *Walker) MoveToward(f *Field, src, dest UnitCoord) UnitCoord {
 	currentCell := f.CellAt(currentCellCoord)
 	cost := calcSlopeCost(direction, currentCell.slopes)
 
-	log.Println("mover:", src, "->", dest, "d:", direction, "t:", toward)
+	//log.Println("mover:", src, "->", dest, "d:", direction, "t:", toward)
 	var energy float32
 	switch cost {
 	case -1:
@@ -95,13 +91,13 @@ func (w *Walker) MoveToward(f *Field, src, dest UnitCoord) UnitCoord {
 	nextCellCoord := next.Cell()
 	if nextCellCoord != currentCellCoord {
 		// crossed bound, so check edge passability
-		log.Println("mover: crossing bounds", currentCellCoord, "->", nextCellCoord)
+		//log.Println("mover: crossing bounds", currentCellCoord, "->", nextCellCoord)
 		stepCoord := currentCellCoord.AddCoord(direction)
 		pass := f.CheckPassability(currentCellCoord, stepCoord)
 		if pass == PS_PASSABLE {
 			// ok moving in
 			// check if have transit cell
-			log.Println("mover: can cross", currentCellCoord, "->", stepCoord)
+			//log.Println("mover: can cross", currentCellCoord, "->", stepCoord)
 			if stepCoord != nextCellCoord {
 				// have a transit cell
 				pass = f.CheckPassability(stepCoord, nextCellCoord)
@@ -130,7 +126,7 @@ func (w *Walker) MoveToward(f *Field, src, dest UnitCoord) UnitCoord {
 		} else {
 			// just hang there if cannot pass into next cell
 			next = src
-			log.Println("mover: shall not pass", currentCellCoord, "->", nextCellCoord)
+			//log.Println("mover: shall not pass", currentCellCoord, "->", nextCellCoord)
 		}
 	}
 
@@ -138,32 +134,8 @@ func (w *Walker) MoveToward(f *Field, src, dest UnitCoord) UnitCoord {
 }
 
 func (w *Walker) MoveAway(f *Field, src, dest UnitCoord) UnitCoord {
-	toward := NormTowardCoord(src, dest)
-	away := toward.Mult(-1)
-	nextCellCoord := src.Cell().AddCoord(NextCellCoord(src, away)).Bound(0, 0, 1024, 1024)
-	currentCell := f.CellAt(src.Cell())
-	nextCell := f.CellAt(nextCellCoord)
-
-	var speed float32
-	switch {
-	case currentCell.elevation == nextCell.elevation:
-		// walking straight
-		speed = w.WalkSpeed
-	case currentCell.elevation > nextCell.elevation:
-		// walking down
-		speed = w.WalkDownSpeed
-	case currentCell.elevation < nextCell.elevation:
-		// walking up
-		speed = w.WalkUpSpeed
-	}
-
-	// advance
-	nextPos := src.AddCoord(away.Mult(speed))
-	if src.Distance(nextPos) < src.Distance(dest) {
-		return nextPos.Bound(LOWER_BOUND, LOWER_BOUND, UPPER_BOUND, UPPER_BOUND)
-	} else {
-		return dest.Bound(LOWER_BOUND, LOWER_BOUND, UPPER_BOUND, UPPER_BOUND)
-	}
+	newDest := src.AddCoord(src.AddCoord(dest.Mult(-1)))
+	return w.MoveToward(f, src, newDest)
 }
 
 // calcSlopeCost return 1 for moving up on slope, -1 for moving down on slope

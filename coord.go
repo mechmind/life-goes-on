@@ -72,10 +72,10 @@ func NormTowardCoord(src, dest UnitCoord) UnitCoord {
 
 func NextCellCoord(pos, dir UnitCoord) CellCoord {
 	joint := pos.Cell()
-	if dir.X > 0 {
+	if dir.X > FLOAT_ERROR {
 		joint.X++
 	}
-	if dir.Y > 0 {
+	if dir.Y > FLOAT_ERROR {
 		joint.Y++
 	}
 	jointDir := joint.Unit().AddCoord(pos.Mult(-1))
@@ -85,27 +85,27 @@ func NextCellCoord(pos, dir UnitCoord) CellCoord {
 		// moving right into joint
 		next = next.Add(sgn(dir.X), sgn(dir.Y))
 	} else if crossProd < 0 {
-		// dir vector points to the cell counterclockwise to joint
+		// jointDir vector points to the cell counterclockwise to joint
 		switch {
-		case dir.X < 0 && dir.Y < 0:
+		case jointDir.X < 0 && jointDir.Y < 0:
 			next = next.Add(0, -1)
-		case dir.X < 0 && dir.Y >= 0:
+		case jointDir.X < 0 && jointDir.Y >= 0:
 			next = next.Add(-1, 0)
-		case dir.X >= 0 && dir.Y >= 0:
+		case jointDir.X >= 0 && jointDir.Y >= 0:
 			next = next.Add(0, 1)
-		case dir.X >= 0 && dir.Y < 0:
+		case jointDir.X >= 0 && jointDir.Y < 0:
 			next = next.Add(1, 0)
 		}
 	} else {
-		// dir vector points to the cell clockwise to next
+		// jointDir vector points to the cell clockwise to next
 		switch {
-		case dir.X < 0 && dir.Y < 0:
+		case jointDir.X < 0 && jointDir.Y < 0:
 			next = next.Add(-1, 0)
-		case dir.X < 0 && dir.Y >= 0:
+		case jointDir.X < 0 && jointDir.Y >= 0:
 			next = next.Add(0, 1)
-		case dir.X >= 0 && dir.Y >= 0:
+		case jointDir.X >= 0 && jointDir.Y >= 0:
 			next = next.Add(1, 0)
-		case dir.X >= 0 && dir.Y < 0:
+		case jointDir.X >= 0 && jointDir.Y < 0:
 			next = next.Add(0, -1)
 		}
 	}
