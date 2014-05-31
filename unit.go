@@ -28,6 +28,7 @@ const (
 	SOL_BASE_HEALTH    = 100
 	SOL_GUN_DAMAGE     = 10
 	SOL_GUN_RANGE      = 15
+	SOL_SEMIFIRE_TICKS = 2
 
 	DAM_MOVER_WALK      = 0.30
 	DAM_MOVER_WALKUP    = 0.10
@@ -194,6 +195,7 @@ type Soldier struct {
 	field  *Field
 	id     int
 	health float32
+	semifireCounter int8
 	target UnitCoord
 	path   Path
 }

@@ -49,14 +49,23 @@ func (s *Squad) DetachUnit(u Unit) {
 
 func (s *Squad) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
 	soldier := u.(*Soldier)
-	// check any zeds nearby
-	byDistance := f.UnitsInRange(coord, soldier.Gunner.fireRange)
-	for _, zed := range byDistance {
-		if _, ok := zed.unit.(*Zed); ok {
-			if soldier.CanShoot(coord, zed.coord) {
-				// shoot that zed
-				soldier.Shoot(coord, zed.coord, zed.unit)
-				return
+
+	if soldier.semifireCounter > 0 {
+		soldier.semifireCounter--
+	}
+
+	if (s.fireState == ORDER_FIRE ||
+		(s.fireState == ORDER_SEMIFIRE && soldier.semifireCounter == 0)) {
+		byDistance := f.UnitsInRange(coord, soldier.Gunner.fireRange)
+		// check any zeds nearby
+		for _, zed := range byDistance {
+			if _, ok := zed.unit.(*Zed); ok {
+				if soldier.CanShoot(coord, zed.coord) {
+					// shoot that zed
+					soldier.Shoot(coord, zed.coord, zed.unit)
+					soldier.semifireCounter = SOL_SEMIFIRE_TICKS
+					return
+				}
 			}
 		}
 	}
