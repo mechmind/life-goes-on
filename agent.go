@@ -315,6 +315,10 @@ func (d *DamselCrowd) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
 	dam.adrenaline -= DAM_ADRENALINE_FADE
 	if dam.adrenaline < 0 {
 		dam.adrenaline = 0
+		if dam.panicPoint != (UnitCoord{0, 0}) {
+			dam.wanderTarget = coord
+			dam.panicPoint = UnitCoord{0, 0}
+		}
 	}
 }
 
