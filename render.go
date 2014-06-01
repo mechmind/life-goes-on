@@ -121,6 +121,7 @@ func RunTUI(updates chan *Field, orders chan Order) {
 	go pollEvents(events)
 
 	termbox.Init()
+	termbox.SetInputMode(termbox.InputEsc | termbox.InputMouse)
 	defer termbox.Close()
 
 	var currentPos CellCoord
@@ -155,31 +156,60 @@ func RunTUI(updates chan *Field, orders chan Order) {
 			drawField(field, currentPos, sv)
 		case ev := <-events:
 			switch ev.Type {
+			case termbox.EventMouse:
+				cursorPos = currentPos.Add(ev.MouseX, ev.MouseY)
+				termbox.SetCursor(ev.MouseX, ev.MouseY)
+				switch {
+				case ev.Key == termbox.MouseLeft:
+					sendOrder(orders, Order{ORDER_MOVE, cursorPos})
+					sv.movingTo = cursorPos
+				case ev.Key == termbox.MouseRight:
+					sendOrder(orders, Order{ORDER_GREN, cursorPos})
+					sv.grenTo = cursorPos
+				}
+
 			case termbox.EventKey:
 				switch {
 				// move view left
 				case ev.Ch == 'h':
-					fallthrough
-				case ev.Key == termbox.KeyArrowLeft:
 					cursorPos = cursorPos.Add(-1, 0)
 
 				// move view right
 				case ev.Ch == 'l':
-					fallthrough
-				case ev.Key == termbox.KeyArrowRight:
 					cursorPos = cursorPos.Add(1, 0)
 
 				// move view up
 				case ev.Ch == 'j':
-					fallthrough
-				case ev.Key == termbox.KeyArrowDown:
 					cursorPos = cursorPos.Add(0, 1)
 
 				// move view down
 				case ev.Ch == 'k':
-					fallthrough
-				case ev.Key == termbox.KeyArrowUp:
 					cursorPos = cursorPos.Add(0, -1)
+
+				// direct moving window
+				case ev.Key == termbox.KeyArrowLeft:
+					fallthrough
+				case ev.Ch == 'a':
+					cursorPos = cursorPos.Add(-TUI_POS_STEP, 0)
+					currentPos = currentPos.Add(-TUI_POS_STEP, 0)
+
+				case ev.Key == termbox.KeyArrowRight:
+					fallthrough
+				case ev.Ch == 'd':
+					cursorPos = cursorPos.Add(TUI_POS_STEP, 0)
+					currentPos = currentPos.Add(TUI_POS_STEP, 0)
+
+				case ev.Key == termbox.KeyArrowDown:
+					fallthrough
+				case ev.Ch == 's':
+					cursorPos = cursorPos.Add(0, TUI_POS_STEP)
+					currentPos = currentPos.Add(0, TUI_POS_STEP)
+
+				case ev.Key == termbox.KeyArrowUp:
+					fallthrough
+				case ev.Ch == 'w':
+					cursorPos = cursorPos.Add(0, -TUI_POS_STEP)
+					currentPos = currentPos.Add(0, -TUI_POS_STEP)
 
 				// big leaps
 				// move view left
@@ -223,7 +253,7 @@ func RunTUI(updates chan *Field, orders chan Order) {
 					sv.automove = true
 
 				// quit
-				case ev.Ch == 'q':
+				case ev.Key == termbox.KeyF10:
 					return
 				}
 				currentPos = handleCursorMove(size, currentPos, cursorPos)
