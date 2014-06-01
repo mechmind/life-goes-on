@@ -45,13 +45,14 @@ func main() {
 	//*/
 
 	field.PlaceAgent(mainSquad)
-	field.PlaceUnit(UnitCoord{1, 1}, mainSquad, sold1)
+	field.PlaceUnit(CellCoord{3, 1}.UnitCenter(), mainSquad, sold1)
 	//*
-	field.PlaceUnit(UnitCoord{3, 1}, mainSquad, sold2)
-	field.PlaceUnit(UnitCoord{1, 3}, mainSquad, sold3)
-	field.PlaceUnit(UnitCoord{3, 3}, mainSquad, sold4)
+	field.PlaceUnit(CellCoord{1, 1}.UnitCenter(), mainSquad, sold2)
+	field.PlaceUnit(CellCoord{1, 3}.UnitCenter(), mainSquad, sold3)
+	field.PlaceUnit(CellCoord{3, 3}.UnitCenter(), mainSquad, sold4)
 	//*/
 
+	//*
 	var swarm Agent = &ZedSwarm{}
 	var zed1 = NewZed(field)
 	var zed2 = NewZed(field)
@@ -65,7 +66,7 @@ func main() {
 	var crowd Agent = &DamselCrowd{}
 	field.PlaceAgent(crowd)
 
-	//*
+	/*
 	for idx := 0; idx < TOTAL_DAMSELS; idx++ {
 		var coord UnitCoord
 		for {
@@ -81,10 +82,13 @@ func main() {
 	//*/
 
 	// FIXME(pathfind): debugging
-	// make some obstackles
-	//for i := 5; i < 25; i++ {
-	//field.CellAt(CellCoord{i, 15}).passable = false
-	//}
+	// make tight corridor
+	/*
+	for i := 2; i < 10; i++ {
+		field.CellAt(CellCoord{i, 2}).passable = false
+		field.CellAt(CellCoord{2, i}).passable = false
+	}
+	//*/
 	//dam := NewDamsel(field)
 	//dam.wanderTarget = UnitCoord{5.5, 15.5}
 	//field.PlaceUnit(UnitCoord{4.97, 14.95}, crowd, dam)

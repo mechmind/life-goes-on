@@ -161,8 +161,11 @@ func RunTUI(updates chan *Field, orders chan Order) {
 				//termbox.SetCursor(ev.MouseX, ev.MouseY)
 				switch {
 				case ev.Key == termbox.MouseLeft:
-					sendOrder(orders, Order{ORDER_MOVE, cursorPos})
-					sv.movingTo = cursorPos
+					if (CheckCellCoordBounds(cursorPos, CellCoord{0, 0}, CellCoord{1024, 1024}) &&
+						field.CellAt(cursorPos).passable) {
+						sendOrder(orders, Order{ORDER_MOVE, cursorPos})
+						sv.movingTo = cursorPos
+					}
 				case ev.Key == termbox.MouseRight:
 					sendOrder(orders, Order{ORDER_GREN, cursorPos})
 					sv.grenTo = cursorPos
