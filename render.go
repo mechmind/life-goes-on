@@ -127,7 +127,7 @@ func RunTUI(updates chan *Field, orders chan Order) {
 	var currentPos CellCoord
 	var size = tb2cell()
 	var cursorPos = CellCoord{size.X / 2, size.Y / 2} // center cursor
-	termbox.SetCursor(cursorPos.X, cursorPos.Y)
+	//termbox.SetCursor(cursorPos.X, cursorPos.Y)
 
 	// FIXME: hardcoded squad values
 	var sv = squadView{fireState: ORDER_FIRE}
@@ -158,7 +158,7 @@ func RunTUI(updates chan *Field, orders chan Order) {
 			switch ev.Type {
 			case termbox.EventMouse:
 				cursorPos = currentPos.Add(ev.MouseX, ev.MouseY)
-				termbox.SetCursor(ev.MouseX, ev.MouseY)
+				//termbox.SetCursor(ev.MouseX, ev.MouseY)
 				switch {
 				case ev.Key == termbox.MouseLeft:
 					sendOrder(orders, Order{ORDER_MOVE, cursorPos})
@@ -257,14 +257,14 @@ func RunTUI(updates chan *Field, orders chan Order) {
 					return
 				}
 				currentPos = handleCursorMove(size, currentPos, cursorPos)
-				relativeCursorPos := cursorPos.AddCoord(currentPos.Mult(-1))
-				termbox.SetCursor(relativeCursorPos.X, relativeCursorPos.Y)
+				//relativeCursorPos := cursorPos.AddCoord(currentPos.Mult(-1))
+				//termbox.SetCursor(relativeCursorPos.X, relativeCursorPos.Y)
 				drawField(field, currentPos, sv)
 			case termbox.EventResize:
 				size = tb2cell()
 				currentPos = handleCursorMove(size, currentPos, cursorPos)
-				relativeCursorPos := cursorPos.AddCoord(currentPos.Mult(-1))
-				termbox.SetCursor(relativeCursorPos.X, relativeCursorPos.Y)
+				//relativeCursorPos := cursorPos.AddCoord(currentPos.Mult(-1))
+				//termbox.SetCursor(relativeCursorPos.X, relativeCursorPos.Y)
 				drawField(field, currentPos, sv)
 			}
 		}
