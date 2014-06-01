@@ -203,6 +203,7 @@ func (z *ZedSwarm) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
 		return
 	}
 
+	var target UnitCoord
 	if zed.lastAttacker >= 0 {
 		// fight back
 		attackerCoord, attacker := f.UnitByID(zed.lastAttacker)
@@ -224,7 +225,7 @@ func (z *ZedSwarm) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
 				}
 			}
 		} else {
-			zed.MoveToward(coord, attackerCoord)
+			target = attackerCoord
 		}
 	} else {
 		// find nearby human and attack it
@@ -263,9 +264,34 @@ func (z *ZedSwarm) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
 					// eat it
 					zed.Eat(ZED_EAT_NUTRITION)
 				}
+			return
 			}
 		} else {
-			zed.MoveToward(coord, dest)
+			target = dest
+		}
+	}
+
+	if f.HaveLOS(coord, target) {
+		// forget about path, rush toward target
+		zed.path = nil
+		zed.MoveToward(coord, target)
+	} else if target.Cell() != (CellCoord{0, 0}) {
+		// follow path to target or create one
+		if zed.path == nil {
+			zed.path = f.FindPath(coord.Cell(), target.Cell())
+		}
+		target, ok := zed.path.Current()
+		if ok {
+			if coord.Distance(target.UnitCenter()) < FLOAT_ERROR {
+				target, ok = zed.path.Next()
+				if ok {
+					u.MoveToward(coord, target.UnitCenter())
+				}
+			} else {
+				u.MoveToward(coord, target.UnitCenter())
+			}
+		} else {
+			zed.path = nil
 		}
 	}
 }

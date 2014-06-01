@@ -254,6 +254,8 @@ type Zed struct {
 
 	rage      float32
 	nutrition float32
+
+	path Path
 }
 
 func NewZed(field *Field) *Zed {
