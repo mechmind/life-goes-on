@@ -6,6 +6,7 @@ import (
 
 const (
 	DAMSEL_WANDER_RADIUS  = 40
+	DAMSEL_WANDER_TRIES   = 3
 	SQUAD_RETARGET_TICKS  = 30
 	SQUAD_ORDER_QUEUE_LEN = 16
 )
@@ -297,11 +298,16 @@ func (d *DamselCrowd) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
 	} else {
 		if dam.wanderTarget == coord {
 			// wander around
-			rx := ibound(coord.Cell().X+int(rand.Int31n(DAMSEL_WANDER_RADIUS))-
-				DAMSEL_WANDER_RADIUS/2, 0, 1024)
-			ry := ibound(coord.Cell().Y+int(rand.Int31n(DAMSEL_WANDER_RADIUS))-
-				DAMSEL_WANDER_RADIUS/2, 0, 1024)
-			dam.wanderTarget = CellCoord{rx, ry}.UnitCenter()
+			for i := 0; i < DAMSEL_WANDER_TRIES; i++ {
+				rx := ibound(coord.Cell().X+int(rand.Int31n(DAMSEL_WANDER_RADIUS))-
+					DAMSEL_WANDER_RADIUS/2, 0, 1024)
+				ry := ibound(coord.Cell().Y+int(rand.Int31n(DAMSEL_WANDER_RADIUS))-
+					DAMSEL_WANDER_RADIUS/2, 0, 1024)
+				newCoord := CellCoord{rx, ry}.UnitCenter()
+				if f.HaveLOS(coord, newCoord) {
+					dam.wanderTarget = newCoord
+				}
+			}
 		}
 		dam.MoveToward(coord, dam.wanderTarget)
 	}
