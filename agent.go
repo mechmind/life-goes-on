@@ -86,7 +86,17 @@ func (s *Squad) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
 	// no zeds in fire range, move toward target
 	if s.target != soldier.target {
 		soldier.target = s.target
-		soldier.path = f.FindPath(coord.Cell(), soldier.target.Cell())
+		// select nearby cell, to not jam entire squad into one
+		sid := soldier.id % 4
+		lx := sid % 2
+		ly := sid / 2
+		myTargetCell := s.target.Cell().Add(lx, ly)
+		if f.field.CellAt(myTargetCell).passable {
+			soldier.myTarget = myTargetCell.UnitCenter()
+		} else {
+			soldier.myTarget = s.target
+		}
+		soldier.path = f.FindPath(coord.Cell(), soldier.myTarget.Cell())
 	}
 
 	target, ok := soldier.path.Current()

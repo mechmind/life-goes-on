@@ -93,7 +93,6 @@ func (w *Walker) MoveToward(f *Field, src, dest UnitCoord) (UnitCoord, bool) {
 		energy = targetDistance
 	}
 
-
 	distance := toward.Mult(energy)
 	next := src.AddCoord(distance)
 	nextCellCoord := next.Cell()
@@ -203,6 +202,7 @@ type Soldier struct {
 	health          float32
 	semifireCounter int8
 	target          UnitCoord
+	myTarget        UnitCoord
 	path            Path
 }
 
