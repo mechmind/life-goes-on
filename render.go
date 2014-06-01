@@ -335,7 +335,7 @@ func drawField(f *Field, pos CellCoord, sv squadView) {
 				for j := -SOL_GREN_RADIUS; j <= SOL_GREN_RADIUS; j++ {
 					cellCoord := center.Cell().Add(i, j)
 					screenPos := cellCoord.AddCoord(pos.Mult(-1))
-					if CheckCellCoordBounds(screenPos, pos, upperBound) &&
+					if CheckCellCoordBounds(cellCoord, pos, upperBound) &&
 						center.Distance(cellCoord.UnitCenter()) < SOL_GREN_RADIUS &&
 						f.HaveLOS(center, cellCoord.UnitCenter()) {
 						// in a range and visible
