@@ -30,12 +30,9 @@ func main() {
 	time := NewTime(10, field)
 
 	// make obstacles
-	// simple walls
-	for i := 10; i < 100; i += 10 {
-		for j := 15; j < 45; j++ {
-			field.CellAt(CellCoord{i, j}).passable = false
-		}
-	}
+	// generate quarters
+	qp := NewQuarterPlan(CellCoord{32, 32})
+	qp.CreateQuarters(field)
 
 	//*
 	var orders = make(chan Order, SQUAD_ORDER_QUEUE_LEN)
