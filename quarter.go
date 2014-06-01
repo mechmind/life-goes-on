@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	QUARTER_BLOCK_SIZE           = 7
+	QUARTER_BLOCK_SIZE           = 6
 	QUARTER_HOUSE_SIZE           = 32
 	QUARTER_PADDING              = 2
 	QUARTER_PROBABILITY          = 35

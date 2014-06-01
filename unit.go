@@ -93,6 +93,7 @@ func (w *Walker) MoveToward(f *Field, src, dest UnitCoord) (UnitCoord, bool) {
 		energy = targetDistance
 	}
 
+
 	distance := toward.Mult(energy)
 	next := src.AddCoord(distance)
 	nextCellCoord := next.Cell()
@@ -126,7 +127,7 @@ func (w *Walker) MoveToward(f *Field, src, dest UnitCoord) (UnitCoord, bool) {
 							scale = (float32(currentCellCoord.Y) - src.Y) / distance.Y
 						}
 					}
-					scale += FLOAT_ERROR
+					scale -= FLOAT_ERROR
 					next = src.AddCoord(distance.Mult(scale))
 					stuck = true
 				}

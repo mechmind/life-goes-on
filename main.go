@@ -66,7 +66,7 @@ func main() {
 	var crowd Agent = &DamselCrowd{}
 	field.PlaceAgent(crowd)
 
-	/*
+	//*
 	for idx := 0; idx < TOTAL_DAMSELS; idx++ {
 		var coord UnitCoord
 		for {
