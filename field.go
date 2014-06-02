@@ -1,5 +1,10 @@
 package main
 
+import (
+	"math/rand"
+	"time"
+)
+
 const (
 	FLOAT_ERROR           = 0.000001
 	FIELD_BACKBUFFER_SIZE = 3
@@ -35,10 +40,14 @@ type Field struct {
 
 	// moving stuff
 	grens []FlyingGren
+
+	// rng
+	rng *rand.Rand
 }
 
 func NewField(xSize, ySize int, updates chan *Field) *Field {
-	field := &Field{xSize, ySize, make([]Cell, xSize*ySize), nil, nil, updates, nil, nil}
+	rng := rand.New(rand.NewSource(time.Now().Unix()))
+	field := &Field{xSize, ySize, make([]Cell, xSize*ySize), nil, nil, updates, nil, nil, rng}
 	field.makePassableField()
 	field.computeSlopes()
 	return field
@@ -49,7 +58,7 @@ func copyField(f *Field) *Field {
 	select {
 	case bb = <-fieldBackbuffer:
 	default:
-		bb = &Field{f.xSize, f.ySize, make([]Cell, f.xSize*f.ySize), nil, nil, nil, nil, nil}
+		bb = &Field{f.xSize, f.ySize, make([]Cell, f.xSize*f.ySize), nil, nil, nil, nil, nil, nil}
 	}
 
 	copy(bb.cells, f.cells)
@@ -153,6 +162,67 @@ func (f *Field) UnitsInRange(center UnitCoord, radius float32) []UnitPresence {
 }
 
 // return true if have line of sight from 'from' to 'to'
+func (f *Field) TraceShot(from, to UnitCoord, tid int) (atid int, atcoord UnitCoord) {
+	// misshots start when accuracy starting do decay
+	if from.Distance(to) <= SOL_ACC_DECAY_START {
+		return tid, to
+	}
+
+	toward := NormTowardCoord(from, to)
+
+	low := UnitCoord{fmin(from.X, to.X), fmin(from.Y, to.Y)}.Cell()
+	high := UnitCoord{fmax(from.X, to.X), fmax(from.Y, to.Y)}.Cell()
+
+	units := make(map[CellCoord][]UnitPresence)
+	for _, up := range f.units {
+		cellCoord := up.coord.Cell()
+		if CheckCellCoordBounds(cellCoord, low, high) {
+			us := append(units[cellCoord], up)
+			units[cellCoord] = us
+		}
+	}
+
+	current := from.AddCoord(toward.Mult(SOL_ACC_DECAY_START))
+	for {
+		// always check next and current cell passability because we can advance 2 cells
+		// on one step
+		if f.CellAt(current.Cell()).passable == false {
+			return -1, current
+		}
+
+		currentCell := current.Cell()
+		unitsThere := units[currentCell]
+		for _, u := range unitsThere {
+			if f.rng.Intn(100) < SOL_MISSHOT_PROB {
+				// misshot
+				return u.unit.GetID(), u.coord
+			}
+		}
+
+		stepCoord := NextCellCoord(current, toward)
+		if currentCell.AddCoord(stepCoord) != current.AddCoord(toward).Cell() {
+			unitsHere := units[currentCell.AddCoord(stepCoord)]
+			for _, u := range unitsHere {
+				if f.rng.Intn(100) < SOL_MISSHOT_PROB {
+					// misshot
+					return u.unit.GetID(), u.coord
+				}
+			}
+		}
+
+		if current == to {
+			return tid, to
+		}
+
+		if current.Distance(to) < 1 {
+			current = to
+		} else {
+			current = current.AddCoord(toward)
+		}
+	}
+	//return tid, to
+}
+
 func (f *Field) HaveLOS(from, to UnitCoord) bool {
 	toward := NormTowardCoord(from, to)
 

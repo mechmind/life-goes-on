@@ -12,6 +12,20 @@ func fabs(f float32) float32 {
 	return f
 }
 
+func fmin(v1, v2 float32) float32 {
+	if v1 < v2 {
+		return v1
+	}
+	return v2
+}
+
+func fmax(v1, v2 float32) float32 {
+	if v1 > v2 {
+		return v1
+	}
+	return v2
+}
+
 func fbound(value, low, high float32) float32 {
 	if value < low {
 		return low

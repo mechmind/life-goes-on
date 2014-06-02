@@ -22,18 +22,20 @@ const (
 	ZED_HEALTH                    = 140
 	ZED_NUTRITION_BASE            = 1000
 
-	SOL_MOVER_WALK     = 0.70
-	SOL_MOVER_WALKUP   = 0.25
-	SOL_MOVER_WALKDOWN = 0.75
-	SOL_BASE_HEALTH    = 100
-	SOL_GUN_DAMAGE     = 10
-	SOL_GUN_RANGE      = 35
-	SOL_GREN_DAMAGE    = 80
-	SOL_GREN_RANGE     = 20
-	SOL_GREN_RADIUS    = 6
-	SOL_GREN_SPEED     = 3
-	SOL_GREN_TICK_CAP  = 3
-	SOL_SEMIFIRE_TICKS = 2
+	SOL_MOVER_WALK      = 0.70
+	SOL_MOVER_WALKUP    = 0.25
+	SOL_MOVER_WALKDOWN  = 0.75
+	SOL_BASE_HEALTH     = 100
+	SOL_GUN_DAMAGE      = 10
+	SOL_GUN_RANGE       = 45
+	SOL_ACC_DECAY_START = 10
+	SOL_MISSHOT_PROB   = 20
+	SOL_GREN_DAMAGE     = 80
+	SOL_GREN_RANGE      = 20
+	SOL_GREN_RADIUS     = 6
+	SOL_GREN_SPEED      = 3
+	SOL_GREN_TICK_CAP   = 3
+	SOL_SEMIFIRE_TICKS  = 2
 
 	DAM_MOVER_WALK      = 0.30
 	DAM_MOVER_WALKUP    = 0.10
@@ -238,8 +240,19 @@ func (s *Soldier) RecieveDamage(from int, dmg float32) {
 }
 
 func (s *Soldier) Shoot(src, dest UnitCoord, victim Unit) {
-	// TODO: calculate hit probability based on distance
-	victim.RecieveDamage(s.id, s.Gunner.gunDamage)
+	// check misshots
+	tid, newDest := s.field.TraceShot(src, dest, victim.GetID())
+	// calculate hit probability
+	dist := src.Distance(newDest)
+	if dist > SOL_ACC_DECAY_START {
+		prob := (SOL_GUN_RANGE - dist) * 100 / (SOL_GUN_RANGE - SOL_ACC_DECAY_START)
+		if s.field.rng.Float32() * 100 > prob {
+			// miss
+			return
+		}
+	}
+	_, realVictim := s.field.UnitByID(tid)
+	realVictim.RecieveDamage(s.id, s.Gunner.gunDamage)
 }
 
 type Zed struct {
