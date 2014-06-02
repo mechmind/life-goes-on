@@ -29,6 +29,7 @@ type Squad struct {
 	orders    chan Order
 	fireState int
 	grenTo    CellCoord
+	grenTimeout int
 }
 
 func (s *Squad) AttachUnit(u Unit) {
@@ -55,12 +56,13 @@ func (s *Squad) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
 		soldier.semifireCounter--
 	}
 
-	if s.grenTo != (CellCoord{0, 0}) {
+	if s.grenTo != (CellCoord{0, 0}) && s.grenTimeout == 0 {
 		grenTo := s.grenTo.UnitCenter()
 		if coord.Distance(grenTo) < SOL_GREN_RANGE && f.HaveLOS(coord, grenTo) {
 			// throw gren
 			s.grenTo = CellCoord{0, 0}
 			f.ThrowGren(coord, grenTo)
+			s.grenTimeout = SOL_GREN_TIMEOUT
 			return
 		}
 	}
@@ -168,6 +170,10 @@ OrderLoop:
 			// chase toward zed
 			s.target = zed.coord
 		}
+	}
+
+	if s.grenTimeout > 0 {
+		s.grenTimeout--
 	}
 }
 
