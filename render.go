@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/nsf/termbox-go"
 )
 
@@ -47,6 +48,9 @@ const (
 	TUI_PATHFIND_PATH_BG   = termbox.ColorRed
 
 	TUI_CURSOR_MARGIN = 5
+	
+	// status
+	TUI_STATUS_FIRE_FG = termbox.ColorRed
 )
 
 var boomingColors = [SOL_GREN_TICK_CAP + 1]struct {
@@ -96,18 +100,6 @@ func sendOrder(orders chan Order, o Order) {
 	}
 }
 
-func toggleFireState(fs int) int {
-	switch fs {
-	case ORDER_FIRE:
-		return ORDER_SEMIFIRE
-	case ORDER_SEMIFIRE:
-		return ORDER_NOFIRE
-	case ORDER_NOFIRE:
-		return ORDER_FIRE
-	default:
-		return ORDER_FIRE
-	}
-}
 
 type squadView struct {
 	fireState int
@@ -127,7 +119,7 @@ func RunTUI(updates chan *Field, orders chan Order) {
 	defer termbox.Close()
 
 	var currentPos CellCoord
-	var size = tb2cell()
+	var size = tb2cell().Add(0, -2)
 	var cursorPos = CellCoord{size.X / 2, size.Y / 2} // center cursor
 	//termbox.SetCursor(cursorPos.X, cursorPos.Y)
 
@@ -278,7 +270,8 @@ func RunTUI(updates chan *Field, orders chan Order) {
 
 // render field chunk that we currently looking at
 func drawField(f *Field, pos CellCoord, sv squadView) {
-	upperBound := tb2cell().Add(-1, -1).AddCoord(pos)
+	// 2 lines are reserved for messages and status bars
+	upperBound := tb2cell().Add(-1, -3).AddCoord(pos)
 
 	termbox.Clear(TUI_DEFAULT_FG, TUI_DEFAULT_BG)
 
@@ -387,6 +380,21 @@ func drawField(f *Field, pos CellCoord, sv squadView) {
 		}
 	}
 
+	// render status and message bars
+	var statusPos int
+	var fireState = "[ %s ]"
+	switch sv.fireState {
+	case ORDER_FIRE:
+		fireState = fmt.Sprintf(fireState, "STAY_FIRE")
+	case ORDER_SEMIFIRE:
+		fireState = fmt.Sprintf(fireState, "RUN_FIRE")
+	case ORDER_NOFIRE:
+		fireState = fmt.Sprintf(fireState, "NO_FIRE")
+	}
+
+	statusPos = writeTermString(fireState, TUI_STATUS_FIRE_FG, TUI_DEFAULT_BG,
+		statusPos, tb2cell().Y-1)
+
 	termbox.Flush()
 }
 
@@ -414,4 +422,12 @@ func getUnitView(u Unit) (ch rune, fg, bg termbox.Attribute) {
 		return ch, fg, TUI_CORPSE_BG
 	}
 	return ' ', TUI_DEFAULT_FG, TUI_DEFAULT_BG
+}
+
+func writeTermString(str string, fg, bg termbox.Attribute, startX, startY int) (newPos int) {
+	for _, r := range str {
+		termbox.SetCell(startX, startY, r, fg, bg)
+		startX++
+	}
+	return startX
 }

@@ -13,3 +13,14 @@ type Order struct {
 	order int
 	coord CellCoord
 }
+
+func toggleFireState(fs int) int {
+	switch fs {
+	case ORDER_FIRE:
+		return ORDER_SEMIFIRE
+	case ORDER_SEMIFIRE:
+		return ORDER_FIRE
+	default:
+		return ORDER_FIRE
+	}
+}
