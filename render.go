@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/nsf/termbox-go"
+	"strings"
 )
 
 const (
@@ -108,7 +109,7 @@ type squadView struct {
 	automove  bool
 }
 
-func RunTUI(updates chan *Field, orders chan Order) {
+func RunTUI(updates chan *Field, gameStateChan chan int, orders chan Order) {
 	var events = make(chan termbox.Event)
 	go pollEvents(events)
 
@@ -119,7 +120,7 @@ func RunTUI(updates chan *Field, orders chan Order) {
 	defer termbox.Close()
 
 	var currentPos CellCoord
-	var size = tb2cell().Add(0, -2)
+	var size = tb2cell()
 	var cursorPos = CellCoord{size.X / 2, size.Y / 2} // center cursor
 	//termbox.SetCursor(cursorPos.X, cursorPos.Y)
 
@@ -129,8 +130,11 @@ func RunTUI(updates chan *Field, orders chan Order) {
 	// recieve field view first
 	var field = <-updates
 
+	var gameState = GAME_WAIT
+
 	for {
 		select {
+		case gameState = <-gameStateChan:
 		case newfield := <-updates:
 			// send old field into field backbuffer
 			select {
@@ -147,7 +151,7 @@ func RunTUI(updates chan *Field, orders chan Order) {
 					break
 				}
 			}
-			drawField(field, currentPos, sv)
+			drawField(field, currentPos, sv, gameState)
 		case ev := <-events:
 			switch ev.Type {
 			case termbox.EventMouse:
@@ -256,22 +260,22 @@ func RunTUI(updates chan *Field, orders chan Order) {
 				currentPos = handleCursorMove(size, currentPos, cursorPos)
 				//relativeCursorPos := cursorPos.AddCoord(currentPos.Mult(-1))
 				//termbox.SetCursor(relativeCursorPos.X, relativeCursorPos.Y)
-				drawField(field, currentPos, sv)
+				drawField(field, currentPos, sv, gameState)
 			case termbox.EventResize:
 				size = tb2cell()
 				currentPos = handleCursorMove(size, currentPos, cursorPos)
 				//relativeCursorPos := cursorPos.AddCoord(currentPos.Mult(-1))
 				//termbox.SetCursor(relativeCursorPos.X, relativeCursorPos.Y)
-				drawField(field, currentPos, sv)
+				drawField(field, currentPos, sv, gameState)
 			}
 		}
 	}
 }
 
 // render field chunk that we currently looking at
-func drawField(f *Field, pos CellCoord, sv squadView) {
+func drawField(f *Field, pos CellCoord, sv squadView, gameState int) {
 	// 2 lines are reserved for messages and status bars
-	upperBound := tb2cell().Add(-1, -3).AddCoord(pos)
+	upperBound := tb2cell().Add(-1, -1).AddCoord(pos)
 
 	termbox.Clear(TUI_DEFAULT_FG, TUI_DEFAULT_BG)
 
@@ -412,6 +416,15 @@ func drawField(f *Field, pos CellCoord, sv squadView) {
 	statusPos = writeTermString(fmt.Sprintf("Bs: %d", Bs), TUI_DAMSEL_FG, TUI_DEFAULT_BG,
 		statusPos+1, yPos)
 
+	// render gameover block if nesessary
+	switch gameState {
+	case GAME_WIN:
+		writeBanner("YOU WIN")
+	case GAME_LOSE:
+		writeBanner("YOU LOSE")
+	case GAME_DRAW:
+		writeBanner("DRAW")
+	}
 	termbox.Flush()
 }
 
@@ -447,4 +460,19 @@ func writeTermString(str string, fg, bg termbox.Attribute, startX, startY int) (
 		startX++
 	}
 	return startX
+}
+
+func writeBanner(str string) {
+	strlen := len(str)
+	totalLen := strlen + 4
+
+	size := tb2cell()
+	xs := (size.X - totalLen) / 2
+	ys := size.Y/2 -1
+
+	msg := fmt.Sprintf("* %s *", str)
+	line := strings.Repeat("*", totalLen)
+	writeTermString(line, TUI_DEFAULT_FG, TUI_DEFAULT_BG, xs, ys)
+	writeTermString(msg, TUI_DEFAULT_FG, TUI_DEFAULT_BG, xs, ys+1)
+	writeTermString(line, TUI_DEFAULT_FG, TUI_DEFAULT_BG, xs, ys+2)
 }

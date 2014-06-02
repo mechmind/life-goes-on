@@ -4,6 +4,10 @@ import (
 	"time"
 )
 
+const (
+	TIME_TICKS_PER_SEC = 10
+)
+
 type Ticker interface {
 	Tick(tick int64)
 }

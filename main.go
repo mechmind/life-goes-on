@@ -27,7 +27,7 @@ func main() {
 	rand.Seed(time.Now().Unix())
 	updates := make(chan *Field)
 	field := NewField(1024, 1024, updates)
-	time := NewTime(10, field)
+	time := NewTime(TIME_TICKS_PER_SEC, field)
 
 	// make obstacles
 	// generate quarters
@@ -94,5 +94,5 @@ func main() {
 	//field.PlaceUnit(UnitCoord{4.97, 14.95}, crowd, dam)
 
 	go time.Run()
-	RunTUI(updates, orders)
+	RunTUI(updates, field.gameState, orders)
 }

@@ -22,6 +22,14 @@ const (
 	PS_IMPASSABLE
 )
 
+const (
+	GAME_WAIT = 1 << iota
+	GAME_RUNNING
+	GAME_WIN
+	GAME_LOSE
+	GAME_DRAW
+)
+
 var nopAgent NopAgent
 
 var fieldBackbuffer = make(chan *Field, FIELD_BACKBUFFER_SIZE)
@@ -43,11 +51,15 @@ type Field struct {
 
 	// rng
 	rng *rand.Rand
+
+	// game state
+	gameState chan int
 }
 
 func NewField(xSize, ySize int, updates chan *Field) *Field {
 	rng := rand.New(rand.NewSource(time.Now().Unix()))
-	field := &Field{xSize, ySize, make([]Cell, xSize*ySize), nil, nil, updates, nil, nil, rng}
+	field := &Field{xSize, ySize, make([]Cell, xSize*ySize), nil, nil, updates, nil, nil, rng,
+		make(chan int, 5)}
 	field.makePassableField()
 	field.computeSlopes()
 	return field
@@ -58,7 +70,7 @@ func copyField(f *Field) *Field {
 	select {
 	case bb = <-fieldBackbuffer:
 	default:
-		bb = &Field{f.xSize, f.ySize, make([]Cell, f.xSize*f.ySize), nil, nil, nil, nil, nil, nil}
+		bb = &Field{xSize: f.xSize, ySize: f.ySize, cells: make([]Cell, f.xSize*f.ySize)}
 	}
 
 	copy(bb.cells, f.cells)
@@ -116,6 +128,32 @@ func (f *Field) Tick(tick int64) {
 		}
 	}
 
+	// check game over
+	if tick % TIME_TICKS_PER_SEC == 0 {
+		var Zs, Bs, Ss int
+		for _, u := range f.units {
+			switch u.unit.(type) {
+			case *Zed:
+				Zs++
+			case *Damsel:
+				Bs++
+			case *Soldier:
+				Ss++
+			}
+		}
+		if Ss == 0 {
+			f.gameState <- GAME_LOSE
+		}
+		if Zs == 0 {
+			if Bs == 0 {
+				f.gameState <- GAME_DRAW
+			} else {
+				f.gameState <- GAME_WIN
+			}
+		}
+	}
+
+	// send update
 	select {
 	case f.updates <- copyField(f):
 	default:
