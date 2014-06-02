@@ -392,8 +392,25 @@ func drawField(f *Field, pos CellCoord, sv squadView) {
 		fireState = fmt.Sprintf(fireState, "NO_FIRE")
 	}
 
+	yPos := tb2cell().Y-1
 	statusPos = writeTermString(fireState, TUI_STATUS_FIRE_FG, TUI_DEFAULT_BG,
-		statusPos, tb2cell().Y-1)
+		statusPos, yPos)
+
+	// count Zs and Bs and show that count in status
+	var Zs, Bs int
+	for _, up := range f.units {
+		switch up.unit.(type) {
+		case *Zed:
+			Zs++
+		case *Damsel:
+			Bs++
+		}
+	}
+
+	statusPos = writeTermString(fmt.Sprintf("Zs: %d", Zs), TUI_ZED_FG, TUI_DEFAULT_BG,
+		statusPos+1, yPos)
+	statusPos = writeTermString(fmt.Sprintf("Bs: %d", Bs), TUI_DAMSEL_FG, TUI_DEFAULT_BG,
+		statusPos+1, yPos)
 
 	termbox.Flush()
 }
