@@ -30,6 +30,7 @@ type Squad struct {
 	fireState int
 	grenTo    CellCoord
 	grenTimeout int
+	pid int
 }
 
 func (s *Squad) AttachUnit(u Unit) {

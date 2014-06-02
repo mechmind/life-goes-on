@@ -8,6 +8,7 @@ import (
 const (
 	FLOAT_ERROR           = 0.000001
 	FIELD_BACKBUFFER_SIZE = 3
+	FIELD_SIZE = 1024
 )
 
 const (
@@ -22,13 +23,6 @@ const (
 	PS_IMPASSABLE
 )
 
-const (
-	GAME_WAIT = 1 << iota
-	GAME_RUNNING
-	GAME_WIN
-	GAME_LOSE
-	GAME_DRAW
-)
 
 var nopAgent NopAgent
 
@@ -53,32 +47,26 @@ type Field struct {
 	rng *rand.Rand
 
 	// game state
-	gameState chan int
+	gameState chan GameState
 }
 
 func NewField(xSize, ySize int, updates chan *Field) *Field {
 	rng := rand.New(rand.NewSource(time.Now().Unix()))
 	field := &Field{xSize, ySize, make([]Cell, xSize*ySize), nil, nil, updates, nil, nil, rng,
-		make(chan int, 5)}
+		make(chan GameState, 5)}
 	field.makePassableField()
 	field.computeSlopes()
 	return field
 }
 
 func copyField(f *Field) *Field {
-	var bb *Field
-	select {
-	case bb = <-fieldBackbuffer:
-	default:
-		bb = &Field{xSize: f.xSize, ySize: f.ySize, cells: make([]Cell, f.xSize*f.ySize)}
-	}
+	bb := &Field{xSize: f.xSize, ySize: f.ySize}
 
-	copy(bb.cells, f.cells)
+	bb.cells = f.cells
 	bb.units = append(bb.units[:0], f.units...)
 	bb.agents = append(bb.agents[:0], f.agents...)
 	bb.grens = append(bb.grens[:0], f.grens...)
-	bb.pathfinder = f.pathfinder // FIXME(pathfind)
-	bb.updates = fieldBackbuffer
+	//bb.pathfinder = f.pathfinder // FIXME(pathfind)
 
 	return bb
 }
@@ -142,8 +130,10 @@ func (f *Field) Tick(tick int64) {
 			}
 		}
 		if Ss == 0 {
-			f.gameState <- GAME_LOSE
+			f.gameState <- GameState{GAME_OVER, -1}
 		}
+		// TODO: rebuild
+		/*
 		if Zs == 0 {
 			if Bs == 0 {
 				f.gameState <- GAME_DRAW
@@ -151,6 +141,7 @@ func (f *Field) Tick(tick int64) {
 				f.gameState <- GAME_WIN
 			}
 		}
+		//*/
 	}
 
 	// send update

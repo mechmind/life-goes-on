@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/nsf/termbox-go"
+	"log"
 	"strings"
 )
 
@@ -64,59 +65,67 @@ var boomingColors = [SOL_GREN_TICK_CAP + 1]struct {
 	{termbox.ColorRed, termbox.ColorDefault, '*'},
 }
 
-func pollEvents(events chan termbox.Event) {
-	for {
-		events <- termbox.PollEvent()
-	}
+type Render interface {
+	HandleUpdate(*Field)
+	HandleGameState(GameState)
+	AssignSquad(int, chan Order)
+	Spectate()
+	Run()
 }
 
-func tb2cell() CellCoord {
-	x, y := termbox.Size()
-	return CellCoord{x, y}
+type assignment struct {
+	id int
+	orders chan Order
 }
 
-func handleCursorMove(size, pos, cursor CellCoord) CellCoord {
-	low := pos.Add(TUI_CURSOR_MARGIN, TUI_CURSOR_MARGIN)
-	high := pos.AddCoord(size).Add(-TUI_CURSOR_MARGIN, -TUI_CURSOR_MARGIN)
-	if !CheckCellCoordBounds(cursor, low, high) {
-		// cursor is too close to border, move window
-		switch {
-		case cursor.X < low.X:
-			pos.X -= TUI_POS_STEP
-		case cursor.X > high.X:
-			pos.X += TUI_POS_STEP
-		case cursor.Y < low.Y:
-			pos.Y -= TUI_POS_STEP
-		case cursor.Y > high.Y:
-			pos.Y += TUI_POS_STEP
-		}
-	}
-	return pos
+type LocalRender struct {
+	updates chan *Field
+	orders chan Order
+	squad int
+	stateUpdates chan GameState
+	assignments chan assignment
+
+	events chan termbox.Event
 }
 
-func sendOrder(orders chan Order, o Order) {
+func NewLocalRender() *LocalRender {
+	return &LocalRender{updates: make(chan *Field, 3), stateUpdates: make(chan GameState, 3),
+		squad: -1, assignments: make(chan assignment, 1), events: make(chan termbox.Event)}
+}
+
+func (lr *LocalRender) HandleUpdate(f *Field) {
 	select {
-	case orders <- o:
+	case lr.updates <- f:
 	default:
 	}
 }
 
-
-type squadView struct {
-	fireState int
-	movingTo  CellCoord
-	grenTo    CellCoord
-	automove  bool
+func (lr *LocalRender) HandleGameState(s GameState) {
+	select {
+	case lr.stateUpdates <- s:
+	default:
+	}
 }
 
-func RunTUI(updates chan *Field, gameStateChan chan int, orders chan Order) {
-	var events = make(chan termbox.Event)
-	go pollEvents(events)
+func (lr *LocalRender) AssignSquad(id int, orders chan Order) {
+	lr.assignments <- assignment{id, orders}
+}
+
+func (lr *LocalRender) Spectate() {
+	lr.assignments <- assignment{-1, nil}
+}
+
+func (lr *LocalRender) Init() {
+	go pollEvents(lr.events)
 
 	prepareTerminal()
 
 	termbox.Init()
 	termbox.SetInputMode(termbox.InputEsc | termbox.InputMouse)
+
+}
+
+func (lr *LocalRender) Run() {
 	defer termbox.Close()
 
 	var currentPos CellCoord
@@ -128,21 +137,19 @@ func RunTUI(updates chan *Field, gameStateChan chan int, orders chan Order) {
 	var sv = squadView{fireState: ORDER_FIRE}
 
 	// recieve field view first
-	var field = <-updates
+	var field = <-lr.updates
 
-	var gameState = GAME_WAIT
+	var gameState = GameState{state: GAME_WAIT}
 
 	for {
 		select {
-		case gameState = <-gameStateChan:
-		case newfield := <-updates:
-			// send old field into field backbuffer
-			select {
-			case newfield.updates <- field:
-			default:
-			}
+		case gameState = <-lr.stateUpdates:
+		case assignment := <-lr.assignments:
+			lr.squad = assignment.id
+			lr.orders = assignment.orders
+			log.Println("rdr: assigned to squad", lr.squad, "orders?", lr.orders == nil)
+		case field = <-lr.updates:
 
-			field = newfield
 			// update rendering state
 			// handle grens
 			for _, gren := range field.grens {
@@ -152,7 +159,7 @@ func RunTUI(updates chan *Field, gameStateChan chan int, orders chan Order) {
 				}
 			}
 			drawField(field, currentPos, sv, gameState)
-		case ev := <-events:
+		case ev := <-lr.events:
 			switch ev.Type {
 			case termbox.EventMouse:
 				cursorPos = currentPos.Add(ev.MouseX, ev.MouseY)
@@ -161,11 +168,11 @@ func RunTUI(updates chan *Field, gameStateChan chan int, orders chan Order) {
 				case ev.Key == termbox.MouseLeft:
 					if (CheckCellCoordBounds(cursorPos, CellCoord{0, 0}, CellCoord{1024, 1024}) &&
 						field.CellAt(cursorPos).passable) {
-						sendOrder(orders, Order{ORDER_MOVE, cursorPos})
+						sendOrder(lr.orders, Order{ORDER_MOVE, cursorPos})
 						sv.movingTo = cursorPos
 					}
 				case ev.Key == termbox.MouseRight:
-					sendOrder(orders, Order{ORDER_GREN, cursorPos})
+					sendOrder(lr.orders, Order{ORDER_GREN, cursorPos})
 					sv.grenTo = cursorPos
 				}
 
@@ -231,26 +238,26 @@ func RunTUI(updates chan *Field, gameStateChan chan int, orders chan Order) {
 
 				// orders
 				case ev.Key == termbox.KeySpace:
-					sendOrder(orders, Order{ORDER_MOVE, cursorPos})
+					sendOrder(lr.orders, Order{ORDER_MOVE, cursorPos})
 					sv.movingTo = cursorPos
 					sv.automove = false
 
 				case ev.Ch == 'g':
 					fallthrough
 				case ev.Ch == 'G':
-					sendOrder(orders, Order{ORDER_GREN, cursorPos})
+					sendOrder(lr.orders, Order{ORDER_GREN, cursorPos})
 					sv.grenTo = cursorPos
 
 				case ev.Ch == 'f':
 					fallthrough
 				case ev.Ch == 'F':
 					sv.fireState = toggleFireState(sv.fireState)
-					sendOrder(orders, Order{sv.fireState, cursorPos})
+					sendOrder(lr.orders, Order{sv.fireState, cursorPos})
 
 				case ev.Ch == 'p':
 					fallthrough
 				case ev.Ch == 'P':
-					sendOrder(orders, Order{ORDER_AUTOMOVE, cursorPos})
+					sendOrder(lr.orders, Order{ORDER_AUTOMOVE, cursorPos})
 					sv.automove = true
 
 				// quit
@@ -273,7 +280,7 @@ func RunTUI(updates chan *Field, gameStateChan chan int, orders chan Order) {
 }
 
 // render field chunk that we currently looking at
-func drawField(f *Field, pos CellCoord, sv squadView, gameState int) {
+func drawField(f *Field, pos CellCoord, sv squadView, gameState GameState) {
 	// 2 lines are reserved for messages and status bars
 	upperBound := tb2cell().Add(-1, -1).AddCoord(pos)
 
@@ -417,7 +424,7 @@ func drawField(f *Field, pos CellCoord, sv squadView, gameState int) {
 		statusPos+1, yPos)
 
 	// render gameover block if nesessary
-	switch gameState {
+	switch gameState.state {
 	case GAME_WIN:
 		writeBanner("YOU WIN")
 	case GAME_LOSE:
@@ -475,4 +482,49 @@ func writeBanner(str string) {
 	writeTermString(line, TUI_DEFAULT_FG, TUI_DEFAULT_BG, xs, ys)
 	writeTermString(msg, TUI_DEFAULT_FG, TUI_DEFAULT_BG, xs, ys+1)
 	writeTermString(line, TUI_DEFAULT_FG, TUI_DEFAULT_BG, xs, ys+2)
+}
+
+func pollEvents(events chan termbox.Event) {
+	for {
+		events <- termbox.PollEvent()
+	}
+}
+
+func tb2cell() CellCoord {
+	x, y := termbox.Size()
+	return CellCoord{x, y}
+}
+
+func handleCursorMove(size, pos, cursor CellCoord) CellCoord {
+	low := pos.Add(TUI_CURSOR_MARGIN, TUI_CURSOR_MARGIN)
+	high := pos.AddCoord(size).Add(-TUI_CURSOR_MARGIN, -TUI_CURSOR_MARGIN)
+	if !CheckCellCoordBounds(cursor, low, high) {
+		// cursor is too close to border, move window
+		switch {
+		case cursor.X < low.X:
+			pos.X -= TUI_POS_STEP
+		case cursor.X > high.X:
+			pos.X += TUI_POS_STEP
+		case cursor.Y < low.Y:
+			pos.Y -= TUI_POS_STEP
+		case cursor.Y > high.Y:
+			pos.Y += TUI_POS_STEP
+		}
+	}
+	return pos
+}
+
+func sendOrder(orders chan Order, o Order) {
+	select {
+	case orders <- o:
+	default:
+	}
+}
+
+
+type squadView struct {
+	fireState int
+	movingTo  CellCoord
+	grenTo    CellCoord
+	automove  bool
 }
