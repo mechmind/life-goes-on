@@ -120,6 +120,8 @@ func RunTUI(updates chan *Field, orders chan Order) {
 	var events = make(chan termbox.Event)
 	go pollEvents(events)
 
+	prepareTerminal()
+
 	termbox.Init()
 	termbox.SetInputMode(termbox.InputEsc | termbox.InputMouse)
 	defer termbox.Close()

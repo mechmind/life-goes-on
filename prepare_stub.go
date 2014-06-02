@@ -1,4 +1,5 @@
+// +build !windows
+
 package main
 
-// +build !windows
 func prepareTerminal() {}
