@@ -108,18 +108,12 @@ func (rr *RemoteRender) runReader() {
 }
 
 func (rr *RemoteRender) runWriter() {
-	buf := bufio.NewWriterSize(rr.conn, REMOTE_ENCODE_BUFFER_SIZE)
-	encoder := gob.NewEncoder(buf)
+	encoder := gob.NewEncoder(rr.conn)
 	for {
 		select {
 		case Assignment := <-rr.assignments:
 			log.Println("rr: sending assign")
 			err := encoder.Encode(UpdateBulk{Assignment: &Assignment})
-			if err != nil {
-				rr.writeErrs <- err
-				return
-			}
-			err = buf.Flush()
 			if err != nil {
 				rr.writeErrs <- err
 				return
@@ -133,19 +127,9 @@ func (rr *RemoteRender) runWriter() {
 				rr.writeErrs <- err
 				return
 			}
-			err = buf.Flush()
-			if err != nil {
-				rr.writeErrs <- err
-				return
-			}
 		case State := <-rr.localStateUpdates:
 			log.Println("rr: sending state")
 			err := encoder.Encode(UpdateBulk{GameState: &State})
-			if err != nil {
-				rr.writeErrs <- err
-				return
-			}
-			err = buf.Flush()
 			if err != nil {
 				rr.writeErrs <- err
 				return
