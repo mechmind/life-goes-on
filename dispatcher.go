@@ -117,9 +117,9 @@ func (d *Dispatcher) Run() {
 
 func (d *Dispatcher) runGame() {
 	// bind players to squads
-	for idx, player := range d.players {
-		player.Orders = placeSquad(d.field, idx, player.Id)
-		player.render.AssignSquad(player.Id, player.Orders)
+	for idx, Player := range d.players {
+		Player.Orders = placeSquad(d.field, idx, Player.Id)
+		Player.render.AssignSquad(Player.Id, Player.Orders)
 	}
 
 	populateField(d.field)
@@ -139,16 +139,16 @@ func (d *Dispatcher) runGame() {
 			if pr.op == DISP_ATTACH {
 				d.players[len(d.players)-1].render.Spectate()
 			}
-		case state := <-d.gameState:
-			if state.player >= 0 {
-				player := d.playerById(state.player)
-				if player == nil {
+		case State := <-d.gameState:
+			if State.Player >= 0 {
+				Player := d.playerById(State.Player)
+				if Player == nil {
 					continue
 				}
-				player.render.HandleGameState(state)
+				Player.render.HandleGameState(State)
 			} else {
 				for _, p := range d.players {
-					p.render.HandleGameState(state)
+					p.render.HandleGameState(State)
 				}
 			}
 			// TODO: abort channel

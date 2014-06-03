@@ -11,13 +11,13 @@ var (
 type PathFinder struct {
 	source, Target CellCoord
 	field          *Field
-	cells          map[CellCoord]PathCell
+	Cells          map[CellCoord]PathCell
 	open           *WeightedList
 	path           Path
 }
 
 func NewPathFinder(f *Field) *PathFinder {
-	return &PathFinder{field: f, cells: make(map[CellCoord]PathCell), open: &WeightedList{}}
+	return &PathFinder{field: f, Cells: make(map[CellCoord]PathCell), open: &WeightedList{}}
 }
 
 func (p *PathFinder) FindPath(from, to CellCoord) Path {
@@ -27,41 +27,41 @@ func (p *PathFinder) FindPath(from, to CellCoord) Path {
 	// initialize algo
 	pc := PathCell{from, from, 0, true, true, false}
 	p.open.Insert(from, from.Distance(to))
-	p.cells[from] = pc
+	p.Cells[from] = pc
 
 	// run algo
 	return p.findPath()
 }
 
 func (p *PathFinder) CellAt(coord CellCoord) PathCell {
-	cell, ok := p.cells[coord]
+	cell, ok := p.Cells[coord]
 	if !ok {
 		cell = PathCell{coord, CellCoord{}, math.MaxFloat32, false, false, false}
 		if p.field.CellAt(coord).passable {
 			cell.visible = true
 		}
-		p.cells[coord] = cell
+		p.Cells[coord] = cell
 	}
 
 	return cell
 }
 
 func (p *PathFinder) closeCell(coord CellCoord) {
-	pc := p.cells[coord]
+	pc := p.Cells[coord]
 	pc.closed = true
-	p.cells[coord] = pc
+	p.Cells[coord] = pc
 	p.open.Remove(coord)
 }
 
 func (p *PathFinder) openCell(coord CellCoord, weight float32) {
-	pc := p.cells[coord]
+	pc := p.Cells[coord]
 	pc.open = true
-	p.cells[coord] = pc
+	p.Cells[coord] = pc
 	p.open.Insert(coord, weight)
 }
 
 func (p *PathFinder) updateCell(cell PathCell) {
-	oldCell := p.cells[cell.coord]
+	oldCell := p.Cells[cell.coord]
 	weight := cell.cost + cell.coord.Distance(p.Target)
 	if oldCell.open {
 		p.open.Replace(cell.coord, weight)
@@ -70,15 +70,15 @@ func (p *PathFinder) updateCell(cell PathCell) {
 	}
 	// restore visibility
 	cell.visible = oldCell.visible
-	p.cells[cell.coord] = cell
+	p.Cells[cell.coord] = cell
 }
 
 func (p *PathFinder) Neighbours(center CellCoord) []PathCell {
-	cells := make([]PathCell, 8)
+	Cells := make([]PathCell, 8)
 	for idx, delta := range neighbours {
-		cells[idx] = p.CellAt(center.AddCoord(delta))
+		Cells[idx] = p.CellAt(center.AddCoord(delta))
 	}
-	return cells
+	return Cells
 }
 
 func (p *PathFinder) findPath() Path {
@@ -135,9 +135,9 @@ func (p *PathFinder) findPath() Path {
 
 func (p *PathFinder) backtrackPath() Path {
 	path := Path{p.Target}
-	curr := p.cells[p.Target]
+	curr := p.Cells[p.Target]
 	for {
-		curr = p.cells[curr.parent]
+		curr = p.Cells[curr.parent]
 		if curr.coord == p.source {
 			return path
 		}

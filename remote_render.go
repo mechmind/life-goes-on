@@ -61,7 +61,7 @@ func (rr *RemoteRender) Run() error {
 		//case assignment := <-rr.assignments: // handled directly by writer
 		case field := <-rr.updates:
 			if rr.mapSent {
-				field.cells = nil
+				field.Cells = nil
 			} else {
 				rr.mapSent = true
 			}
@@ -115,8 +115,8 @@ func (rr *RemoteRender) runWriter() {
 				rr.writeErrs <- err
 				return
 			}
-		case state := <-rr.localStateUpdates:
-			err := encoder.Encode(state)
+		case State := <-rr.localStateUpdates:
+			err := encoder.Encode(State)
 			if err != nil {
 				rr.writeErrs <- err
 				return

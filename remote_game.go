@@ -78,8 +78,8 @@ func (rg *RemoteGame) runReader() {
 			rg.render.AssignSquad(ass.Id, rg.Orders)
 		case GameState:
 			// is an game state
-			state := i.(GameState)
-			rg.render.HandleGameState(state)
+			State := i.(GameState)
+			rg.render.HandleGameState(State)
 		default:
 			rg.readErrs <- errors.New("unknown type decoded")
 			return

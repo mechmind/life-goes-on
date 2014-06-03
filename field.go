@@ -30,9 +30,9 @@ var fieldBackbuffer = make(chan *Field, FIELD_BACKBUFFER_SIZE)
 type Passability int
 
 type Field struct {
-	xSize, ySize int
-	cells        []Cell
-	agents       []Agent
+	XSize, YSize int
+	Cells        []Cell
+	Agents       []Agent
 	Units        []UnitPresence
 	updates      chan *Field
 
@@ -40,7 +40,7 @@ type Field struct {
 	pathfinder *PathFinder
 
 	// moving stuff
-	grens []FlyingGren
+	Grens []FlyingGren
 
 	// rng
 	rng *rand.Rand
@@ -49,9 +49,9 @@ type Field struct {
 	gameState chan GameState
 }
 
-func NewField(xSize, ySize int, updates chan *Field) *Field {
+func NewField(XSize, YSize int, updates chan *Field) *Field {
 	rng := rand.New(rand.NewSource(time.Now().Unix()))
-	field := &Field{xSize, ySize, make([]Cell, xSize*ySize), nil, nil, updates, nil, nil, rng,
+	field := &Field{XSize, YSize, make([]Cell, XSize*YSize), nil, nil, updates, nil, nil, rng,
 		make(chan GameState, 5)}
 	field.makePassableField()
 	field.computeSlopes()
@@ -59,12 +59,12 @@ func NewField(xSize, ySize int, updates chan *Field) *Field {
 }
 
 func copyField(f *Field) *Field {
-	bb := &Field{xSize: f.xSize, ySize: f.ySize}
+	bb := &Field{XSize: f.XSize, YSize: f.YSize}
 
-	bb.cells = f.cells
+	bb.Cells = f.Cells
 	bb.Units = append(bb.Units[:0], f.Units...)
-	bb.agents = append(bb.agents[:0], f.agents...)
-	bb.grens = append(bb.grens[:0], f.grens...)
+	bb.Agents = append(bb.Agents[:0], f.Agents...)
+	bb.Grens = append(bb.Grens[:0], f.Grens...)
 	//bb.pathfinder = f.pathfinder // FIXME(pathfind)
 
 	return bb
@@ -73,7 +73,7 @@ func copyField(f *Field) *Field {
 func (f *Field) Tick(tick int64) {
 	view := &FieldView{f}
 
-	for _, agent := range f.agents {
+	for _, agent := range f.Agents {
 		if thinker, ok := agent.(Thinker); ok {
 			thinker.Think(view, tick)
 		}
@@ -84,24 +84,24 @@ func (f *Field) Tick(tick int64) {
 	}
 
 	// handle exploded grens
-	for i := 0; i < len(f.grens); {
-		if f.grens[i].booming == SOL_GREN_TICK_CAP {
+	for i := 0; i < len(f.Grens); {
+		if f.Grens[i].booming == SOL_GREN_TICK_CAP {
 			// remove that gren
-			copy(f.grens[i:], f.grens[i+1:])
-			f.grens = f.grens[:len(f.grens)-1]
+			copy(f.Grens[i:], f.Grens[i+1:])
+			f.Grens = f.Grens[:len(f.Grens)-1]
 			continue
-		} else if f.grens[i].booming > 0 {
-			f.grens[i].booming++
+		} else if f.Grens[i].booming > 0 {
+			f.Grens[i].booming++
 		}
 		i++
 	}
 
 	// handle flying grens
-	for idx, gren := range f.grens {
+	for idx, gren := range f.Grens {
 		toward := NormTowardCoord(gren.from, gren.to).Mult(SOL_GREN_SPEED)
-		if gren.from.Distance(gren.to) < FLOAT_ERROR && f.grens[idx].booming == 0 {
+		if gren.from.Distance(gren.to) < FLOAT_ERROR && f.Grens[idx].booming == 0 {
 			// BOOM
-			f.grens[idx].booming = 1 // for animation
+			f.Grens[idx].booming = 1 // for animation
 			for _, u := range view.UnitsInRange(gren.to, SOL_GREN_RADIUS) {
 				if f.HaveLOS(u.coord, gren.to) {
 					u.Unit.RecieveDamage(-1, SOL_GREN_DAMAGE)
@@ -109,9 +109,9 @@ func (f *Field) Tick(tick int64) {
 			}
 		}
 		if gren.from.Distance(gren.to) < toward.Distance(UnitCoord{0, 0}) {
-			f.grens[idx].from = gren.to
+			f.Grens[idx].from = gren.to
 		} else {
-			f.grens[idx].from = gren.from.AddCoord(toward)
+			f.Grens[idx].from = gren.from.AddCoord(toward)
 		}
 	}
 
@@ -158,7 +158,7 @@ func (f *Field) PlaceUnit(c UnitCoord, agent Agent, u Unit) error {
 }
 
 func (f *Field) PlaceAgent(a Agent) error {
-	f.agents = append(f.agents, a)
+	f.Agents = append(f.Agents, a)
 	return nil
 }
 
@@ -171,7 +171,7 @@ func (f *Field) ReplaceUnit(Id int, c UnitCoord, agent Agent, u Unit) error {
 
 // unit/agent api
 func (f *Field) CellAt(c CellCoord) *Cell {
-	return &f.cells[c.Y*f.xSize+c.X]
+	return &f.Cells[c.Y*f.XSize+c.X]
 }
 
 func (f *Field) UnitByID(Id int) (UnitCoord, Unit) {
@@ -318,7 +318,7 @@ func (f *Field) KillMe(Id int) {
 }
 
 func (f *Field) ThrowGren(from, to UnitCoord) {
-	f.grens = append(f.grens, FlyingGren{from, to, 0})
+	f.Grens = append(f.Grens, FlyingGren{from, to, 0})
 }
 
 func (f *Field) FindPath(from, to CellCoord) Path {
@@ -331,8 +331,8 @@ func (f *Field) FindPath(from, to CellCoord) Path {
 // terrain api
 // makePassableField makes everything but border passable
 func (f *Field) makePassableField() {
-	for i := 1; i < f.xSize-1; i++ {
-		for j := 1; j < f.ySize-1; j++ {
+	for i := 1; i < f.XSize-1; i++ {
+		for j := 1; j < f.YSize-1; j++ {
 			f.CellAt(CellCoord{i, j}).passable = true
 		}
 	}
@@ -340,8 +340,8 @@ func (f *Field) makePassableField() {
 
 func (f *Field) computeSlopes() {
 	// slope is made when elevation level of adjacent cell is greater by 1 from current cell
-	for i := 0; i < f.xSize-1; i++ {
-		for j := 0; j < f.ySize-1; j++ {
+	for i := 0; i < f.XSize-1; i++ {
+		for j := 0; j < f.YSize-1; j++ {
 			// compare cell with right and down neighbours
 			coord := CellCoord{i, j}
 			cell := f.CellAt(coord)

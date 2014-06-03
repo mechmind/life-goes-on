@@ -141,7 +141,7 @@ func (lr *LocalRender) Run() {
 	// recieve field view first
 	var field = <-lr.updates
 
-	var gameState = GameState{state: GAME_WAIT}
+	var gameState = GameState{State: GAME_WAIT}
 
 	for {
 		select {
@@ -154,7 +154,7 @@ func (lr *LocalRender) Run() {
 
 			// update rendering state
 			// handle grens
-			for _, gren := range field.grens {
+			for _, gren := range field.Grens {
 				if gren.from.Cell() == sv.GrenTo {
 					sv.GrenTo = CellCoord{0, 0}
 					break
@@ -289,7 +289,7 @@ func drawField(f *Field, pos CellCoord, sv squadView, gameState GameState) {
 	termbox.Clear(TUI_DEFAULT_FG, TUI_DEFAULT_BG)
 
 	var fieldZero = CellCoord{0, 0}
-	var fieldMax = CellCoord{f.xSize - 1, f.ySize - 1}
+	var fieldMax = CellCoord{f.XSize - 1, f.YSize - 1}
 	// render walls
 	for i := pos.X; i < upperBound.X; i++ {
 		for j := pos.Y; j < upperBound.Y; j++ {
@@ -331,7 +331,7 @@ func drawField(f *Field, pos CellCoord, sv squadView, gameState GameState) {
 	}
 
 	// render grens
-	for _, gren := range f.grens {
+	for _, gren := range f.Grens {
 		if gren.booming == 0 {
 			// flying gren
 			if CheckCellCoordBounds(gren.from.Cell(), pos, upperBound) {
@@ -367,7 +367,7 @@ func drawField(f *Field, pos CellCoord, sv squadView, gameState GameState) {
 	// render pathfind
 	// FIXME(pathfind)
 	if p := f.pathfinder; p != nil {
-		for coord, cell := range p.cells {
+		for coord, cell := range p.Cells {
 			break
 			if !CheckCellCoordBounds(coord, pos, upperBound) {
 				continue
@@ -426,7 +426,7 @@ func drawField(f *Field, pos CellCoord, sv squadView, gameState GameState) {
 		statusPos+1, yPos)
 
 	// render gameover block if nesessary
-	switch gameState.state {
+	switch gameState.State {
 	case GAME_WIN:
 		writeBanner("YOU WIN")
 	case GAME_LOSE:
