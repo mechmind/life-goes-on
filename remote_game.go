@@ -71,6 +71,7 @@ func (rg *RemoteGame) runReader() {
 		case *Field:
 			// is an update
 			field := i.(*Field)
+			rg.fixField(field)
 			rg.render.HandleUpdate(field)
 		case Assignment:
 			// is an assignment
@@ -95,6 +96,25 @@ func (rg *RemoteGame) runWriter() {
 		if err != nil {
 			rg.writeErrs <- err
 			return
+		}
+	}
+}
+
+func (rg *RemoteGame) fixField(field *Field) {
+	for idx := range field.Units {
+		switch field.Units[idx].Unit.(type) {
+		case *Zed:
+			u := field.Units[idx].Unit.(*Zed)
+			u.field = field
+		case *Damsel:
+			u := field.Units[idx].Unit.(*Damsel)
+			u.field = field
+		case *Soldier:
+			u := field.Units[idx].Unit.(*Soldier)
+			u.field = field
+		case *Corpse:
+			u := field.Units[idx].Unit.(*Corpse)
+			u.field = field
 		}
 	}
 }
