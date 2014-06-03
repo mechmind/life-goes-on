@@ -10,7 +10,7 @@ const (
 )
 
 type Order struct {
-	order int
+	Order int
 	Coord CellCoord
 }
 

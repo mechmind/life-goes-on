@@ -23,7 +23,7 @@ func init() {
 }
 
 type UpdateBulk struct {
-	Field *Field
+	Field      *Field
 	Assignment *Assignment
-	GameState *GameState
+	GameState  *GameState
 }

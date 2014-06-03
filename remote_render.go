@@ -1,9 +1,14 @@
 package main
 
 import (
+	"bufio"
 	"encoding/gob"
 	"log"
 	"net"
+)
+
+const (
+	REMOTE_ENCODE_BUFFER_SIZE = 8 * 1024 * 1024
 )
 
 type RemoteRender struct {
@@ -67,6 +72,7 @@ func (rr *RemoteRender) Run() error {
 			} else {
 				rr.mapSent = true
 			}
+
 			rr.localUpdates <- field
 		case gameState := <-rr.stateUpdates:
 			// TODO: handle somewhat
@@ -86,29 +92,34 @@ func (rr *RemoteRender) Run() error {
 func (rr *RemoteRender) runReader() {
 	// read remote data
 	decoder := gob.NewDecoder(rr.conn)
-	var order Order
 	for {
-		err := decoder.Decode(&order)
+		var Order Order
+		err := decoder.Decode(&Order)
 		if err != nil {
 			rr.readErrs <- err
 			return
 		}
-		log.Println("rr: recieved order")
 
 		select {
-		case rr.Orders <- order:
+		case rr.Orders <- Order:
 		default:
 		}
 	}
 }
 
 func (rr *RemoteRender) runWriter() {
-	encoder := gob.NewEncoder(rr.conn)
+	buf := bufio.NewWriterSize(rr.conn, REMOTE_ENCODE_BUFFER_SIZE)
+	encoder := gob.NewEncoder(buf)
 	for {
 		select {
 		case Assignment := <-rr.assignments:
 			log.Println("rr: sending assign")
 			err := encoder.Encode(UpdateBulk{Assignment: &Assignment})
+			if err != nil {
+				rr.writeErrs <- err
+				return
+			}
+			err = buf.Flush()
 			if err != nil {
 				rr.writeErrs <- err
 				return
@@ -122,9 +133,19 @@ func (rr *RemoteRender) runWriter() {
 				rr.writeErrs <- err
 				return
 			}
+			err = buf.Flush()
+			if err != nil {
+				rr.writeErrs <- err
+				return
+			}
 		case State := <-rr.localStateUpdates:
 			log.Println("rr: sending state")
 			err := encoder.Encode(UpdateBulk{GameState: &State})
+			if err != nil {
+				rr.writeErrs <- err
+				return
+			}
+			err = buf.Flush()
 			if err != nil {
 				rr.writeErrs <- err
 				return

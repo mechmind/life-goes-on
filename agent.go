@@ -125,10 +125,10 @@ func (s *Squad) Think(view *FieldView, tick int64) {
 OrderLoop:
 	for {
 		select {
-		case order := <-s.Orders:
-			switch order.order {
+		case Order := <-s.Orders:
+			switch Order.Order {
 			case ORDER_MOVE:
-				s.Target = order.Coord.UnitCenter()
+				s.Target = Order.Coord.UnitCenter()
 				s.Automove = false
 			case ORDER_AUTOMOVE:
 				s.Automove = true
@@ -138,10 +138,10 @@ OrderLoop:
 			case ORDER_SEMIFIRE:
 				fallthrough
 			case ORDER_NOFIRE:
-				s.FireState = order.order
+				s.FireState = Order.Order
 
 			case ORDER_GREN:
-				s.GrenTo = order.Coord
+				s.GrenTo = Order.Coord
 			}
 		default:
 			break OrderLoop
@@ -183,7 +183,7 @@ type ZedSwarm struct {
 }
 
 func (z *ZedSwarm) AttachUnit(u Unit) {
-	z.Units = append(z.Units, u.(*Zed))
+	//z.Units = append(z.Units, u.(*Zed))
 }
 
 func (z *ZedSwarm) DetachUnit(u Unit) {
@@ -308,7 +308,7 @@ type DamselCrowd struct {
 }
 
 func (d *DamselCrowd) AttachUnit(u Unit) {
-	d.Units = append(d.Units, u.(*Damsel))
+	//d.Units = append(d.Units, u.(*Damsel)) // FIXME: rethough this
 }
 
 func (d *DamselCrowd) DetachUnit(u Unit) {

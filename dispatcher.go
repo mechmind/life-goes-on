@@ -11,7 +11,7 @@ const (
 
 var (
 	singlePlayerRules = Rules{minPlayers: 1, maxPlayers: 1}
-	duelRules = Rules{minPlayers: 2, maxPlayers: 2}
+	duelRules         = Rules{minPlayers: 2, maxPlayers: 2}
 )
 
 type Dispatcher struct {

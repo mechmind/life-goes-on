@@ -32,7 +32,9 @@ func main() {
 	// seed random
 	rand.Seed(time.Now().Unix())
 
-	var attachTo interface{ AttachPlayer(Render) }
+	var attachTo interface {
+		AttachPlayer(Render)
+	}
 	if *connect != "" {
 		// connect to remote game
 		remote, err := ConnectRemoteGame(*connect)

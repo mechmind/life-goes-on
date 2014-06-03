@@ -13,8 +13,8 @@ type RemoteGame struct {
 	render              Render
 	Orders              chan Order
 	readErrs, writeErrs chan error
-	attachan chan Render
-	cells []Cell
+	attachan            chan Render
+	cells               []Cell
 }
 
 func ConnectRemoteGame(straddr string) (*RemoteGame, error) {
@@ -99,8 +99,8 @@ func (rg *RemoteGame) runReader() {
 func (rg *RemoteGame) runWriter() {
 	encoder := gob.NewEncoder(rg.conn)
 	for {
-		order := <-rg.Orders
-		err := encoder.Encode(order)
+		Order := <-rg.Orders
+		err := encoder.Encode(Order)
 		if err != nil {
 			rg.writeErrs <- err
 			return
