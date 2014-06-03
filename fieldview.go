@@ -9,36 +9,36 @@ type FieldView struct {
 }
 
 func (f *FieldView) UnitsByDistance(src UnitCoord) []UnitPresence {
-	presence := make([]UnitPresence, len(f.field.units))
-	copy(presence, f.field.units)
+	presence := make([]UnitPresence, len(f.field.Units))
+	copy(presence, f.field.Units)
 	sorter := &unitsByDistance{src, presence}
 	sort.Sort(sorter)
-	return sorter.units
+	return sorter.Units
 }
 
 func (f *FieldView) UnitsInRange(src UnitCoord, r float32) []UnitPresence {
 	presence := make([]UnitPresence, 0)
-	for _, u := range f.field.units {
+	for _, u := range f.field.Units {
 		if src.Distance(u.coord) < r {
 			presence = append(presence, u)
 		}
 	}
 	sorter := &unitsByDistance{src, presence}
 	sort.Sort(sorter)
-	return sorter.units
+	return sorter.Units
 }
 
-func (f *FieldView) UnitByID(id int) (UnitCoord, Unit) {
-	return f.field.UnitByID(id)
+func (f *FieldView) UnitByID(Id int) (UnitCoord, Unit) {
+	return f.field.UnitByID(Id)
 }
 
-func (f *FieldView) Reown(id int, agent Agent) {
-	f.field.units[id].agent = agent
+func (f *FieldView) Reown(Id int, agent Agent) {
+	f.field.Units[Id].agent = agent
 }
 
-func (f *FieldView) ReplaceUnit(id int, agent Agent, u Unit) {
-	coord := f.field.units[id].coord
-	f.field.ReplaceUnit(id, coord, agent, u)
+func (f *FieldView) ReplaceUnit(Id int, agent Agent, u Unit) {
+	coord := f.field.Units[Id].coord
+	f.field.ReplaceUnit(Id, coord, agent, u)
 }
 
 func (f *FieldView) FindPath(from, to CellCoord) Path {
@@ -56,18 +56,18 @@ func (f *FieldView) ThrowGren(from, to UnitCoord) {
 // unitsByDistance used to sort units on field, nearest to src first
 type unitsByDistance struct {
 	src   UnitCoord
-	units []UnitPresence
+	Units []UnitPresence
 }
 
 // sort.Interface implementation
 func (u *unitsByDistance) Len() int {
-	return len(u.units)
+	return len(u.Units)
 }
 
 func (u *unitsByDistance) Less(i, j int) bool {
-	return u.src.Distance(u.units[i].coord) < u.src.Distance(u.units[j].coord)
+	return u.src.Distance(u.Units[i].coord) < u.src.Distance(u.Units[j].coord)
 }
 
 func (u *unitsByDistance) Swap(i, j int) {
-	u.units[i], u.units[j] = u.units[j], u.units[i]
+	u.Units[i], u.Units[j] = u.Units[j], u.Units[i]
 }

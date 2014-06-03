@@ -25,14 +25,14 @@ type Dispatcher struct {
 
 type Player struct {
 	render Render
-	id     int
-	orders chan Order
+	Id     int
+	Orders chan Order
 }
 
 type PlayerReq struct {
 	p    Player
 	op   int
-	id   int
+	Id   int
 	resp chan int
 }
 
@@ -53,8 +53,8 @@ func (d *Dispatcher) AttachPlayer(r Render) int {
 	return <-req.resp
 }
 
-func (d *Dispatcher) DetachPlayer(id int) {
-	req := PlayerReq{Player{}, DISP_ATTACH, id, make(chan int, 1)}
+func (d *Dispatcher) DetachPlayer(Id int) {
+	req := PlayerReq{Player{}, DISP_ATTACH, Id, make(chan int, 1)}
 	d.playerQueue <- req
 	<-req.resp
 }
@@ -63,14 +63,14 @@ func (d *Dispatcher) handlePlayerReq(r PlayerReq) {
 	switch r.op {
 	case DISP_ATTACH:
 		d.players = append(d.players, r.p)
-		pid := d.lastid
+		Pid := d.lastid
 		d.lastid++
-		d.players[len(d.players)-1].id = pid
-		r.resp <- pid
-		log.Println("dp: attached player, id", pid)
+		d.players[len(d.players)-1].Id = Pid
+		r.resp <- Pid
+		log.Println("dp: attached player, id", Pid)
 	case DISP_DETACH:
 		for idx, p := range d.players {
-			if p.id == r.id {
+			if p.Id == r.Id {
 				// TODO: close render?
 				copy(d.players[:idx], d.players[idx+1:])
 				d.players = d.players[:len(d.players)-1]
@@ -84,9 +84,9 @@ func (d *Dispatcher) countPlayers() int {
 	return len(d.players)
 }
 
-func (d *Dispatcher) playerById(id int) *Player {
+func (d *Dispatcher) playerById(Id int) *Player {
 	for idx := range d.players {
-		if d.players[idx].id == id {
+		if d.players[idx].Id == Id {
 			return &d.players[idx]
 		}
 	}
@@ -118,8 +118,8 @@ func (d *Dispatcher) Run() {
 func (d *Dispatcher) runGame() {
 	// bind players to squads
 	for idx, player := range d.players {
-		player.orders = placeSquad(d.field, idx, player.id)
-		player.render.AssignSquad(player.id, player.orders)
+		player.Orders = placeSquad(d.field, idx, player.Id)
+		player.render.AssignSquad(player.Id, player.Orders)
 	}
 
 	populateField(d.field)

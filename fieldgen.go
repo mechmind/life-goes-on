@@ -33,14 +33,14 @@ func populateField(field *Field) {
 			}
 		}
 		dam := NewDamsel(field)
-		dam.wanderTarget = coord
-		field.PlaceUnit(dam.wanderTarget, crowd, dam)
+		dam.WanderTarget = coord
+		field.PlaceUnit(dam.WanderTarget, crowd, dam)
 	}
 }
 
-func placeSquad(field *Field, id, pid int) chan Order {
-	var orders = make(chan Order, SQUAD_ORDER_QUEUE_LEN)
-	var squad Agent = &Squad{orders: orders, pid: pid, fireState: ORDER_FIRE}
+func placeSquad(field *Field, Id, Pid int) chan Order {
+	var Orders = make(chan Order, SQUAD_ORDER_QUEUE_LEN)
+	var squad Agent = &Squad{Orders: Orders, Pid: Pid, FireState: ORDER_FIRE}
 
 	var sold1 = NewSoldier(field)
 	var sold2 = NewSoldier(field)
@@ -48,11 +48,11 @@ func placeSquad(field *Field, id, pid int) chan Order {
 	var sold4 = NewSoldier(field)
 
 	var cx, cy int
-	if id%2 == 1 {
+	if Id%2 == 1 {
 		cx = 100
 	}
 
-	if id/2 == 1 {
+	if Id/2 == 1 {
 		cy = 100
 	}
 
@@ -67,7 +67,7 @@ func placeSquad(field *Field, id, pid int) chan Order {
 	field.PlaceUnit(findFreeCellNearby(field, CellCoord{3, 3}.Add(cx, cy)).UnitCenter(),
 		squad, sold4)
 
-	return orders
+	return Orders
 }
 
 func findFreeCellNearby(field *Field, desiredCell CellCoord) CellCoord {

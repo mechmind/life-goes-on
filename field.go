@@ -33,7 +33,7 @@ type Field struct {
 	xSize, ySize int
 	cells        []Cell
 	agents       []Agent
-	units        []UnitPresence
+	Units        []UnitPresence
 	updates      chan *Field
 
 	// FIXME(pathfind): remove after debugging
@@ -62,7 +62,7 @@ func copyField(f *Field) *Field {
 	bb := &Field{xSize: f.xSize, ySize: f.ySize}
 
 	bb.cells = f.cells
-	bb.units = append(bb.units[:0], f.units...)
+	bb.Units = append(bb.Units[:0], f.Units...)
 	bb.agents = append(bb.agents[:0], f.agents...)
 	bb.grens = append(bb.grens[:0], f.grens...)
 	//bb.pathfinder = f.pathfinder // FIXME(pathfind)
@@ -79,8 +79,8 @@ func (f *Field) Tick(tick int64) {
 		}
 	}
 
-	for _, up := range f.units {
-		up.agent.HandleUnit(view, up.unit, up.coord)
+	for _, up := range f.Units {
+		up.agent.HandleUnit(view, up.Unit, up.coord)
 	}
 
 	// handle exploded grens
@@ -104,7 +104,7 @@ func (f *Field) Tick(tick int64) {
 			f.grens[idx].booming = 1 // for animation
 			for _, u := range view.UnitsInRange(gren.to, SOL_GREN_RADIUS) {
 				if f.HaveLOS(u.coord, gren.to) {
-					u.unit.RecieveDamage(-1, SOL_GREN_DAMAGE)
+					u.Unit.RecieveDamage(-1, SOL_GREN_DAMAGE)
 				}
 			}
 		}
@@ -118,8 +118,8 @@ func (f *Field) Tick(tick int64) {
 	// check game over
 	if tick%TIME_TICKS_PER_SEC == 0 {
 		var Zs, Bs, Ss int
-		for _, u := range f.units {
-			switch u.unit.(type) {
+		for _, u := range f.Units {
+			switch u.Unit.(type) {
 			case *Zed:
 				Zs++
 			case *Damsel:
@@ -151,8 +151,8 @@ func (f *Field) Tick(tick int64) {
 }
 
 func (f *Field) PlaceUnit(c UnitCoord, agent Agent, u Unit) error {
-	f.units = append(f.units, UnitPresence{c, agent, u})
-	u.SetID(len(f.units) - 1)
+	f.Units = append(f.Units, UnitPresence{c, agent, u})
+	u.SetID(len(f.Units) - 1)
 	agent.AttachUnit(u)
 	return nil
 }
@@ -162,9 +162,9 @@ func (f *Field) PlaceAgent(a Agent) error {
 	return nil
 }
 
-func (f *Field) ReplaceUnit(id int, c UnitCoord, agent Agent, u Unit) error {
-	f.units[id] = UnitPresence{c, agent, u}
-	u.SetID(id)
+func (f *Field) ReplaceUnit(Id int, c UnitCoord, agent Agent, u Unit) error {
+	f.Units[Id] = UnitPresence{c, agent, u}
+	u.SetID(Id)
 	agent.AttachUnit(u)
 	return nil
 }
@@ -174,19 +174,19 @@ func (f *Field) CellAt(c CellCoord) *Cell {
 	return &f.cells[c.Y*f.xSize+c.X]
 }
 
-func (f *Field) UnitByID(id int) (UnitCoord, Unit) {
-	return f.units[id].coord, f.units[id].unit
+func (f *Field) UnitByID(Id int) (UnitCoord, Unit) {
+	return f.Units[Id].coord, f.Units[Id].Unit
 }
 
 func (f *Field) UnitsInRange(center UnitCoord, radius float32) []UnitPresence {
-	var units []UnitPresence
+	var Units []UnitPresence
 
-	for _, up := range f.units {
+	for _, up := range f.Units {
 		if center.Distance(up.coord) < radius {
-			units = append(units, up)
+			Units = append(Units, up)
 		}
 	}
-	return units
+	return Units
 }
 
 // return true if have line of sight from 'from' to 'to'
@@ -201,12 +201,12 @@ func (f *Field) TraceShot(from, to UnitCoord, tid int) (atid int, atcoord UnitCo
 	low := UnitCoord{fmin(from.X, to.X), fmin(from.Y, to.Y)}.Cell()
 	high := UnitCoord{fmax(from.X, to.X), fmax(from.Y, to.Y)}.Cell()
 
-	units := make(map[CellCoord][]UnitPresence)
-	for _, up := range f.units {
+	Units := make(map[CellCoord][]UnitPresence)
+	for _, up := range f.Units {
 		cellCoord := up.coord.Cell()
 		if CheckCellCoordBounds(cellCoord, low, high) {
-			us := append(units[cellCoord], up)
-			units[cellCoord] = us
+			us := append(Units[cellCoord], up)
+			Units[cellCoord] = us
 		}
 	}
 
@@ -219,21 +219,21 @@ func (f *Field) TraceShot(from, to UnitCoord, tid int) (atid int, atcoord UnitCo
 		}
 
 		currentCell := current.Cell()
-		unitsThere := units[currentCell]
+		unitsThere := Units[currentCell]
 		for _, u := range unitsThere {
 			if f.rng.Intn(100) < SOL_MISSHOT_PROB {
 				// misshot
-				return u.unit.GetID(), u.coord
+				return u.Unit.GetID(), u.coord
 			}
 		}
 
 		stepCoord := NextCellCoord(current, toward)
 		if currentCell.AddCoord(stepCoord) != current.AddCoord(toward).Cell() {
-			unitsHere := units[currentCell.AddCoord(stepCoord)]
+			unitsHere := Units[currentCell.AddCoord(stepCoord)]
 			for _, u := range unitsHere {
 				if f.rng.Intn(100) < SOL_MISSHOT_PROB {
 					// misshot
-					return u.unit.GetID(), u.coord
+					return u.Unit.GetID(), u.coord
 				}
 			}
 		}
@@ -304,17 +304,17 @@ func (f *Field) CheckPassability(src, dst CellCoord) Passability {
 	return PS_PASSABLE
 }
 
-func (f *Field) MoveMe(id int, coord UnitCoord) UnitCoord {
-	f.units[id].coord = coord
+func (f *Field) MoveMe(Id int, coord UnitCoord) UnitCoord {
+	f.Units[Id].coord = coord
 	return coord
 }
 
-func (f *Field) KillMe(id int) {
+func (f *Field) KillMe(Id int) {
 	// kill unit
-	f.units[id].agent.DetachUnit(f.units[id].unit)
-	unit := f.units[id].unit
-	f.units[id] = UnitPresence{coord: f.units[id].coord, agent: nopAgent,
-		unit: &Corpse{f, id, unit, 0}}
+	f.Units[Id].agent.DetachUnit(f.Units[Id].Unit)
+	Unit := f.Units[Id].Unit
+	f.Units[Id] = UnitPresence{coord: f.Units[Id].coord, agent: nopAgent,
+		Unit: &Corpse{f, Id, Unit, 0}}
 }
 
 func (f *Field) ThrowGren(from, to UnitCoord) {
@@ -368,7 +368,7 @@ func (f *Field) computeSlopes() {
 type UnitPresence struct {
 	coord UnitCoord
 	agent Agent
-	unit  Unit
+	Unit  Unit
 }
 
 type Cell struct {

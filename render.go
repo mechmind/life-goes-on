@@ -74,13 +74,13 @@ type Render interface {
 }
 
 type Assignment struct {
-	id     int
-	orders chan Order
+	Id     int
+	Orders chan Order
 }
 
 type LocalRender struct {
 	updates      chan *Field
-	orders       chan Order
+	Orders       chan Order
 	squad        int
 	stateUpdates chan GameState
 	assignments  chan Assignment
@@ -107,8 +107,8 @@ func (lr *LocalRender) HandleGameState(s GameState) {
 	}
 }
 
-func (lr *LocalRender) AssignSquad(id int, orders chan Order) {
-	lr.assignments <- Assignment{id, orders}
+func (lr *LocalRender) AssignSquad(Id int, Orders chan Order) {
+	lr.assignments <- Assignment{Id, Orders}
 }
 
 func (lr *LocalRender) Spectate() {
@@ -136,7 +136,7 @@ func (lr *LocalRender) Run() {
 	//termbox.SetCursor(cursorPos.X, cursorPos.Y)
 
 	// FIXME: hardcoded squad values
-	var sv = squadView{fireState: ORDER_FIRE}
+	var sv = squadView{FireState: ORDER_FIRE}
 
 	// recieve field view first
 	var field = <-lr.updates
@@ -147,16 +147,16 @@ func (lr *LocalRender) Run() {
 		select {
 		case gameState = <-lr.stateUpdates:
 		case Assignment := <-lr.assignments:
-			lr.squad = Assignment.id
-			lr.orders = Assignment.orders
-			log.Println("rdr: assigned to squad", lr.squad, "orders?", lr.orders == nil)
+			lr.squad = Assignment.Id
+			lr.Orders = Assignment.Orders
+			log.Println("rdr: assigned to squad", lr.squad, "orders?", lr.Orders == nil)
 		case field = <-lr.updates:
 
 			// update rendering state
 			// handle grens
 			for _, gren := range field.grens {
-				if gren.from.Cell() == sv.grenTo {
-					sv.grenTo = CellCoord{0, 0}
+				if gren.from.Cell() == sv.GrenTo {
+					sv.GrenTo = CellCoord{0, 0}
 					break
 				}
 			}
@@ -170,12 +170,12 @@ func (lr *LocalRender) Run() {
 				case ev.Key == termbox.MouseLeft:
 					if (CheckCellCoordBounds(cursorPos, CellCoord{0, 0}, CellCoord{1024, 1024}) &&
 						field.CellAt(cursorPos).passable) {
-						sendOrder(lr.orders, Order{ORDER_MOVE, cursorPos})
+						sendOrder(lr.Orders, Order{ORDER_MOVE, cursorPos})
 						sv.movingTo = cursorPos
 					}
 				case ev.Key == termbox.MouseRight:
-					sendOrder(lr.orders, Order{ORDER_GREN, cursorPos})
-					sv.grenTo = cursorPos
+					sendOrder(lr.Orders, Order{ORDER_GREN, cursorPos})
+					sv.GrenTo = cursorPos
 				}
 
 			case termbox.EventKey:
@@ -240,27 +240,27 @@ func (lr *LocalRender) Run() {
 
 				// orders
 				case ev.Key == termbox.KeySpace:
-					sendOrder(lr.orders, Order{ORDER_MOVE, cursorPos})
+					sendOrder(lr.Orders, Order{ORDER_MOVE, cursorPos})
 					sv.movingTo = cursorPos
-					sv.automove = false
+					sv.Automove = false
 
 				case ev.Ch == 'g':
 					fallthrough
 				case ev.Ch == 'G':
-					sendOrder(lr.orders, Order{ORDER_GREN, cursorPos})
-					sv.grenTo = cursorPos
+					sendOrder(lr.Orders, Order{ORDER_GREN, cursorPos})
+					sv.GrenTo = cursorPos
 
 				case ev.Ch == 'f':
 					fallthrough
 				case ev.Ch == 'F':
-					sv.fireState = toggleFireState(sv.fireState)
-					sendOrder(lr.orders, Order{sv.fireState, cursorPos})
+					sv.FireState = toggleFireState(sv.FireState)
+					sendOrder(lr.Orders, Order{sv.FireState, cursorPos})
 
 				case ev.Ch == 'p':
 					fallthrough
 				case ev.Ch == 'P':
-					sendOrder(lr.orders, Order{ORDER_AUTOMOVE, cursorPos})
-					sv.automove = true
+					sendOrder(lr.Orders, Order{ORDER_AUTOMOVE, cursorPos})
+					sv.Automove = true
 
 				// quit
 				case ev.Key == termbox.KeyF10:
@@ -311,13 +311,13 @@ func drawField(f *Field, pos CellCoord, sv squadView, gameState GameState) {
 	}
 
 	// render units
-	for _, up := range f.units {
+	for _, up := range f.Units {
 		unitCell := up.coord.Cell()
 		if !CheckCellCoordBounds(unitCell, pos, upperBound) {
 			// unit is not visible
 			continue
 		}
-		ch, fg, bg := getUnitView(up.unit)
+		ch, fg, bg := getUnitView(up.Unit)
 		screenPos := unitCell.AddCoord(pos.Mult(-1))
 
 		termbox.SetCell(screenPos.X, screenPos.Y, ch, fg, bg)
@@ -359,8 +359,8 @@ func drawField(f *Field, pos CellCoord, sv squadView, gameState GameState) {
 		}
 	}
 
-	if (sv.grenTo != CellCoord{0, 0}) && CheckCellCoordBounds(sv.grenTo, pos, upperBound) {
-		screenPos := sv.grenTo.AddCoord(pos.Mult(-1))
+	if (sv.GrenTo != CellCoord{0, 0}) && CheckCellCoordBounds(sv.GrenTo, pos, upperBound) {
+		screenPos := sv.GrenTo.AddCoord(pos.Mult(-1))
 		termbox.SetCell(screenPos.X, screenPos.Y, TUI_GREN_TARGET_CHAR,
 			TUI_GREN_TARGET_FG, TUI_DEFAULT_BG)
 	}
@@ -395,24 +395,24 @@ func drawField(f *Field, pos CellCoord, sv squadView, gameState GameState) {
 
 	// render status and message bars
 	var statusPos int
-	var fireState = "[ %s ]"
-	switch sv.fireState {
+	var FireState = "[ %s ]"
+	switch sv.FireState {
 	case ORDER_FIRE:
-		fireState = fmt.Sprintf(fireState, "STAY_FIRE")
+		FireState = fmt.Sprintf(FireState, "STAY_FIRE")
 	case ORDER_SEMIFIRE:
-		fireState = fmt.Sprintf(fireState, "RUN_FIRE")
+		FireState = fmt.Sprintf(FireState, "RUN_FIRE")
 	case ORDER_NOFIRE:
-		fireState = fmt.Sprintf(fireState, "NO_FIRE")
+		FireState = fmt.Sprintf(FireState, "NO_FIRE")
 	}
 
 	yPos := tb2cell().Y - 1
-	statusPos = writeTermString(fireState, TUI_STATUS_FIRE_FG, TUI_DEFAULT_BG,
+	statusPos = writeTermString(FireState, TUI_STATUS_FIRE_FG, TUI_DEFAULT_BG,
 		statusPos, yPos)
 
 	// count Zs and Bs and show that count in status
 	var Zs, Bs int
-	for _, up := range f.units {
-		switch up.unit.(type) {
+	for _, up := range f.Units {
+		switch up.Unit.(type) {
 		case *Zed:
 			Zs++
 		case *Damsel:
@@ -443,21 +443,21 @@ func getUnitView(u Unit) (ch rune, fg, bg termbox.Attribute) {
 		return TUI_SOLDIER_CHAR, TUI_SOLDIER_FG, TUI_DEFAULT_BG
 	case *Damsel:
 		dam := u.(*Damsel)
-		if dam.adrenaline > 0 {
+		if dam.Adrenaline > 0 {
 			return TUI_FASTDAMSEL_CHAR, TUI_FASTDAMSEL_FG, TUI_DEFAULT_BG
 		} else {
 			return TUI_DAMSEL_CHAR, TUI_DAMSEL_FG, TUI_DEFAULT_BG
 		}
 	case *Zed:
 		zed := u.(*Zed)
-		if zed.nutrition > ZED_NUTRITION_FULL {
+		if zed.Nutrition > ZED_NUTRITION_FULL {
 			return TUI_FASTZED_CHAR, TUI_FASTZED_FG, TUI_DEFAULT_BG
 		} else {
 			return TUI_ZED_CHAR, TUI_ZED_FG, TUI_DEFAULT_BG
 		}
 	case *Corpse:
 		corpse := u.(*Corpse)
-		ch, fg, _ := getUnitView(corpse.unit)
+		ch, fg, _ := getUnitView(corpse.Unit)
 		return ch, fg, TUI_CORPSE_BG
 	}
 	return ' ', TUI_DEFAULT_FG, TUI_DEFAULT_BG
@@ -516,16 +516,16 @@ func handleCursorMove(size, pos, cursor CellCoord) CellCoord {
 	return pos
 }
 
-func sendOrder(orders chan Order, o Order) {
+func sendOrder(Orders chan Order, o Order) {
 	select {
-	case orders <- o:
+	case Orders <- o:
 	default:
 	}
 }
 
 type squadView struct {
-	fireState int
+	FireState int
 	movingTo  CellCoord
-	grenTo    CellCoord
-	automove  bool
+	GrenTo    CellCoord
+	Automove  bool
 }

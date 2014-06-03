@@ -7,7 +7,7 @@ import (
 
 type RemoteRender struct {
 	updates      chan *Field
-	orders       chan Order
+	Orders       chan Order
 	squad        int
 	stateUpdates chan GameState
 	assignments  chan Assignment
@@ -40,8 +40,8 @@ func (rr *RemoteRender) HandleGameState(s GameState) {
 	}
 }
 
-func (rr *RemoteRender) AssignSquad(id int, orders chan Order) {
-	rr.assignments <- Assignment{id, orders}
+func (rr *RemoteRender) AssignSquad(Id int, Orders chan Order) {
+	rr.assignments <- Assignment{Id, Orders}
 }
 
 func (rr *RemoteRender) Spectate() {
@@ -93,7 +93,7 @@ func (rr *RemoteRender) runReader() {
 		}
 
 		select {
-		case rr.orders <- order:
+		case rr.Orders <- order:
 		default:
 		}
 	}

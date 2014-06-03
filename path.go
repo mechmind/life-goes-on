@@ -9,7 +9,7 @@ var (
 )
 
 type PathFinder struct {
-	source, target CellCoord
+	source, Target CellCoord
 	field          *Field
 	cells          map[CellCoord]PathCell
 	open           *WeightedList
@@ -22,7 +22,7 @@ func NewPathFinder(f *Field) *PathFinder {
 
 func (p *PathFinder) FindPath(from, to CellCoord) Path {
 	p.source = from
-	p.target = to
+	p.Target = to
 
 	// initialize algo
 	pc := PathCell{from, from, 0, true, true, false}
@@ -62,7 +62,7 @@ func (p *PathFinder) openCell(coord CellCoord, weight float32) {
 
 func (p *PathFinder) updateCell(cell PathCell) {
 	oldCell := p.cells[cell.coord]
-	weight := cell.cost + cell.coord.Distance(p.target)
+	weight := cell.cost + cell.coord.Distance(p.Target)
 	if oldCell.open {
 		p.open.Replace(cell.coord, weight)
 	} else {
@@ -90,7 +90,7 @@ func (p *PathFinder) findPath() Path {
 			return nil
 		}
 
-		if coord == p.target {
+		if coord == p.Target {
 			// ok, path found
 
 			path := p.backtrackPath()
@@ -134,8 +134,8 @@ func (p *PathFinder) findPath() Path {
 }
 
 func (p *PathFinder) backtrackPath() Path {
-	path := Path{p.target}
-	curr := p.cells[p.target]
+	path := Path{p.Target}
+	curr := p.cells[p.Target]
 	for {
 		curr = p.cells[curr.parent]
 		if curr.coord == p.source {

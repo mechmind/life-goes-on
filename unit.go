@@ -167,28 +167,24 @@ type Possesser struct {
 }
 
 type Chaser struct {
-	target int
+	Target int
 }
 
-func (c *Chaser) LockOn(target int) {
-	c.target = target
-}
-
-func (c *Chaser) Target() int {
-	return c.target
+func (c *Chaser) LockOn(Target int) {
+	c.Target = Target
 }
 
 type Gunner struct {
-	fireRange float32
-	gunDamage float32
+	FireRange float32
+	GunDamage float32
 }
 
 func (g Gunner) CanShoot(src, dest UnitCoord) bool {
-	return src.Distance(dest) < g.fireRange
+	return src.Distance(dest) < g.FireRange
 }
 
 type Biter struct {
-	biteDamage float32
+	BiteDamage float32
 }
 
 func (b Biter) CanBite(src, dest UnitCoord) bool {
@@ -201,31 +197,31 @@ type Soldier struct {
 	Chaser
 	Gunner
 	field           *Field
-	id              int
-	health          float32
-	semifireCounter int8
-	target          UnitCoord
-	myTarget        UnitCoord
+	Id              int
+	Health          float32
+	SemifireCounter int8
+	Target          UnitCoord
+	MyTarget        UnitCoord
 	path            Path
 }
 
 func NewSoldier(field *Field) *Soldier {
 	return &Soldier{Walker: Walker{SOL_MOVER_WALK, SOL_MOVER_WALKUP, SOL_MOVER_WALKDOWN},
-		Chaser: Chaser{-1}, Gunner: Gunner{fireRange: SOL_GUN_RANGE, gunDamage: SOL_GUN_DAMAGE},
-		health: SOL_BASE_HEALTH, field: field}
+		Chaser: Chaser{-1}, Gunner: Gunner{FireRange: SOL_GUN_RANGE, GunDamage: SOL_GUN_DAMAGE},
+		Health: SOL_BASE_HEALTH, field: field}
 }
 
-func (s *Soldier) SetID(id int) {
-	s.id = id
+func (s *Soldier) SetID(Id int) {
+	s.Id = Id
 }
 
 func (s *Soldier) GetID() int {
-	return s.id
+	return s.Id
 }
 
 func (s *Soldier) MoveToward(src, dest UnitCoord) (UnitCoord, bool) {
 	nextCoord, stuck := s.Walker.MoveToward(s.field, src, dest)
-	return s.field.MoveMe(s.id, nextCoord), stuck
+	return s.field.MoveMe(s.Id, nextCoord), stuck
 }
 
 func (s *Soldier) CanShoot(src, dest UnitCoord) bool {
@@ -233,11 +229,11 @@ func (s *Soldier) CanShoot(src, dest UnitCoord) bool {
 }
 
 func (s *Soldier) RecieveDamage(from int, dmg float32) {
-	s.health -= dmg
-	if s.health < 0 {
-		s.field.KillMe(s.id)
+	s.Health -= dmg
+	if s.Health < 0 {
+		s.field.KillMe(s.Id)
 	}
-	s.health -= dmg
+	s.Health -= dmg
 }
 
 func (s *Soldier) Shoot(src, dest UnitCoord, victim Unit) {
@@ -253,90 +249,90 @@ func (s *Soldier) Shoot(src, dest UnitCoord, victim Unit) {
 		}
 	}
 	_, realVictim := s.field.UnitByID(tid)
-	realVictim.RecieveDamage(s.id, s.Gunner.gunDamage)
+	realVictim.RecieveDamage(s.Id, s.Gunner.GunDamage)
 }
 
 type Zed struct {
 	field *Field
-	id    int
+	Id    int
 
 	Walker
 	Chaser
 	Biter
-	health       float32
-	lastAttacker int
+	Health       float32
+	LastAttacker int
 
-	rage      float32
-	nutrition float32
+	Rage      float32
+	Nutrition float32
 
 	path Path
 }
 
 func NewZed(field *Field) *Zed {
 	return &Zed{Walker: Walker{ZED_MOVER_WALK, ZED_MOVER_WALKUP, ZED_MOVER_WALKDOWN},
-		Biter: Biter{biteDamage: ZED_BITE_DAMAGE}, lastAttacker: -1, rage: 0,
-		nutrition: ZED_NUTRITION_BASE, health: ZED_HEALTH, field: field}
+		Biter: Biter{BiteDamage: ZED_BITE_DAMAGE}, LastAttacker: -1, Rage: 0,
+		Nutrition: ZED_NUTRITION_BASE, Health: ZED_HEALTH, field: field}
 }
 
-func (z *Zed) SetID(id int) {
-	z.id = id
+func (z *Zed) SetID(Id int) {
+	z.Id = Id
 }
 
 func (z *Zed) GetID() int {
-	return z.id
+	return z.Id
 }
 func (z *Zed) MoveToward(src, dest UnitCoord) (UnitCoord, bool) {
 	// apply nutrition and rage speedup/slowdown
-	nutr_coeff := z.nutrition / 1000
-	rage_coeff := z.rage * ZED_RAGE_SPEEDUP
+	nutr_coeff := z.Nutrition / 1000
+	rage_coeff := z.Rage * ZED_RAGE_SPEEDUP
 	all_coeff := nutr_coeff + rage_coeff
 	z.Walker = Walker{fbound(ZED_MOVER_WALK*all_coeff, 0, 1),
 		fbound(ZED_MOVER_WALKUP*all_coeff, 0, 1),
 		fbound(ZED_MOVER_WALKDOWN*all_coeff, 0, 1)}
 	nextCoord, stuck := z.Walker.MoveToward(z.field, src, dest)
-	z.nutrition -= src.Distance(nextCoord) * ZED_NUTRITION_WALKING
-	return z.field.MoveMe(z.id, nextCoord), stuck
+	z.Nutrition -= src.Distance(nextCoord) * ZED_NUTRITION_WALKING
+	return z.field.MoveMe(z.Id, nextCoord), stuck
 }
 
 func (z *Zed) Bite(src, dest UnitCoord, victim Unit) {
-	damage := z.Biter.biteDamage + z.rage*ZED_RAGE_BITEUP
-	z.nutrition -= damage * ZED_NUTRITION_BITING
+	damage := z.Biter.BiteDamage + z.Rage*ZED_RAGE_BITEUP
+	z.Nutrition -= damage * ZED_NUTRITION_BITING
 
-	victim.RecieveDamage(z.id, z.Biter.biteDamage)
+	victim.RecieveDamage(z.Id, z.Biter.BiteDamage)
 }
 
 func (z *Zed) RecieveDamage(from int, dmg float32) {
-	z.health -= dmg
-	z.rage += dmg * ZED_RAGE_FROM_DAMAGE
-	z.lastAttacker = from
-	if z.health < 0 {
-		z.field.KillMe(z.id)
+	z.Health -= dmg
+	z.Rage += dmg * ZED_RAGE_FROM_DAMAGE
+	z.LastAttacker = from
+	if z.Health < 0 {
+		z.field.KillMe(z.Id)
 	}
 }
 
 func (z *Zed) Eat(food float32) {
-	z.nutrition += food
+	z.Nutrition += food
 }
 
 func (z *Zed) Digest() bool {
 	// calm down
-	z.rage -= z.rage * ZED_RAGE_COOLING
-	if z.rage < ZED_RAGE_THRESHOLD {
-		z.rage = 0
+	z.Rage -= z.Rage * ZED_RAGE_COOLING
+	if z.Rage < ZED_RAGE_THRESHOLD {
+		z.Rage = 0
 	}
 
 	// feed the anger
-	z.nutrition -= z.rage * ZED_RAGE_COST
+	z.Nutrition -= z.Rage * ZED_RAGE_COST
 
 	// digest the food
-	if z.nutrition > ZED_NUTRITION_TO_HP_THRESHOLD {
-		z.nutrition -= ZED_NUTRITION_TO_HP_PORTION
-		z.health += ZED_NUTRITION_TO_HP_PORTION * ZED_NUTRITION_TO_HP_SCALE
+	if z.Nutrition > ZED_NUTRITION_TO_HP_THRESHOLD {
+		z.Nutrition -= ZED_NUTRITION_TO_HP_PORTION
+		z.Health += ZED_NUTRITION_TO_HP_PORTION * ZED_NUTRITION_TO_HP_SCALE
 	}
 
-	if z.nutrition < 0 {
+	if z.Nutrition < 0 {
 		// starve to death
-		z.field.KillMe(z.id)
+		z.field.KillMe(z.Id)
 		return false
 	}
 	return true
@@ -345,90 +341,90 @@ func (z *Zed) Digest() bool {
 type Damsel struct {
 	Walker
 	field        *Field
-	id           int
-	health       float32
-	panicPoint   UnitCoord
-	adrenaline   float32
-	lastAttacker int
-	wanderTarget UnitCoord
+	Id           int
+	Health       float32
+	PanicPoint   UnitCoord
+	Adrenaline   float32
+	LastAttacker int
+	WanderTarget UnitCoord
 }
 
 func NewDamsel(field *Field) *Damsel {
 	return &Damsel{Walker: Walker{DAM_MOVER_WALK, DAM_MOVER_WALKUP, DAM_MOVER_WALKDOWN},
-		lastAttacker: -1, health: DAM_BASE_HEALTH, field: field}
+		LastAttacker: -1, Health: DAM_BASE_HEALTH, field: field}
 }
 
-func (d *Damsel) SetID(id int) {
-	d.id = id
+func (d *Damsel) SetID(Id int) {
+	d.Id = Id
 }
 
 func (d *Damsel) GetID() int {
-	return d.id
+	return d.Id
 }
 
 func (d *Damsel) MoveToward(src, dest UnitCoord) (UnitCoord, bool) {
 	d.adjustWalkSpeed()
 	nextCoord, stuck := d.Walker.MoveToward(d.field, src, dest)
-	return d.field.MoveMe(d.id, nextCoord), stuck
+	return d.field.MoveMe(d.Id, nextCoord), stuck
 }
 
 func (d *Damsel) MoveAway(src, dest UnitCoord) (UnitCoord, bool) {
 	d.adjustWalkSpeed()
 	nextCoord, stuck := d.Walker.MoveAway(d.field, src, dest)
-	return d.field.MoveMe(d.id, nextCoord), stuck
+	return d.field.MoveMe(d.Id, nextCoord), stuck
 }
 
 func (d *Damsel) adjustWalkSpeed() {
 	// calculate adrenaline effect
 	// FIXME: walkup/walkdown recalc
-	newSpeed := DAM_MOVER_WALK + d.adrenaline*DAM_PANIC_SPEEDUP
+	newSpeed := DAM_MOVER_WALK + d.Adrenaline*DAM_PANIC_SPEEDUP
 	d.Walker = Walker{fbound(newSpeed, 0, DAM_PANIC_MAX_SPEED),
 		fbound(newSpeed, 0, DAM_PANIC_MAX_SPEED), fbound(newSpeed, 0, DAM_PANIC_MAX_SPEED)}
 }
 
 func (d *Damsel) HearScream(dmg float32, src UnitCoord, distance float32) {
 	newAdrenaline := dmg / distance * DAM_FEAR_FACTOR
-	if d.adrenaline < FLOAT_ERROR {
-		d.adrenaline = newAdrenaline
+	if d.Adrenaline < FLOAT_ERROR {
+		d.Adrenaline = newAdrenaline
 	}
 
-	d.panicPoint = src
+	d.PanicPoint = src
 }
 
 func (d *Damsel) RecieveDamage(from int, dmg float32) {
-	d.health -= dmg
-	d.lastAttacker = from
+	d.Health -= dmg
+	d.LastAttacker = from
 	// scream in pain
-	myCoord, _ := d.field.UnitByID(d.id)
+	myCoord, _ := d.field.UnitByID(d.Id)
 	neighs := d.field.UnitsInRange(myCoord, DAM_SCREAM_RANGE)
 	for _, neigh := range neighs {
-		if neighDam, ok := neigh.unit.(*Damsel); ok && neighDam.id != d.id {
+		if neighDam, ok := neigh.Unit.(*Damsel); ok && neighDam.Id != d.Id {
 			neighDam.HearScream(dmg, myCoord, myCoord.Distance(neigh.coord))
 		}
 	}
 
-	if d.health < 0 {
-		d.field.KillMe(d.id)
+	if d.Health < 0 {
+		d.field.KillMe(d.Id)
 	} else {
 		// boost adrenaline
-		d.adrenaline += dmg
+		d.Adrenaline += dmg
 	}
 }
 
 // temporary implement corpse as unit
 type Corpse struct {
 	field            *Field
-	id               int
-	unit             Unit
-	ressurectCounter int
+	Id               int
+	Unit             Unit
+	RessurectCounter int
 }
 
-func (c *Corpse) SetID(id int) {
-	c.id = id
+func (c *Corpse) SetID(Id int) {
+	c.Id = Id
 }
 
 func (c *Corpse) GetID() int {
-	return c.id
+	return c.Id
 }
 
 func (c *Corpse) MoveToward(src, dest UnitCoord) (UnitCoord, bool) {

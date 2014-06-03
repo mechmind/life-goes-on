@@ -56,11 +56,11 @@ func (s *Server) serveConn(conn *net.TCPConn) {
 	}
 
 	render := CreateRemoteRender(conn)
-	pid := s.dispatcher.AttachPlayer(render)
+	Pid := s.dispatcher.AttachPlayer(render)
 	err = render.Run()
 	if err != nil {
 		log.Println("conn: remote render error:", err)
 	}
 
-	s.dispatcher.DetachPlayer(pid)
+	s.dispatcher.DetachPlayer(Pid)
 }

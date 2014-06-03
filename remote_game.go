@@ -11,7 +11,7 @@ type RemoteGame struct {
 	conn *net.TCPConn
 
 	render              Render
-	orders              chan Order
+	Orders              chan Order
 	readErrs, writeErrs chan error
 }
 
@@ -36,7 +36,7 @@ func ConnectRemoteGame(straddr string) (*RemoteGame, error) {
 	}
 
 	rg := &RemoteGame{conn: conn, readErrs: make(chan error), writeErrs: make(chan error),
-		orders: make(chan Order)}
+		Orders: make(chan Order)}
 	return rg, nil
 }
 
@@ -75,7 +75,7 @@ func (rg *RemoteGame) runReader() {
 		case Assignment:
 			// is an assignment
 			ass := i.(Assignment)
-			rg.render.AssignSquad(ass.id, rg.orders)
+			rg.render.AssignSquad(ass.Id, rg.Orders)
 		case GameState:
 			// is an game state
 			state := i.(GameState)
@@ -90,7 +90,7 @@ func (rg *RemoteGame) runReader() {
 func (rg *RemoteGame) runWriter() {
 	encoder := gob.NewEncoder(rg.conn)
 	for {
-		order := <-rg.orders
+		order := <-rg.Orders
 		err := encoder.Encode(order)
 		if err != nil {
 			rg.writeErrs <- err
