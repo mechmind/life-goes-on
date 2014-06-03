@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/gob"
+	"log"
 	"net"
 )
 
@@ -60,6 +61,7 @@ func (rr *RemoteRender) Run() error {
 		// local channels
 		//case assignment := <-rr.assignments: // handled directly by writer
 		case field := <-rr.updates:
+			field = copyField(field)
 			if rr.mapSent {
 				field.Cells = nil
 			} else {
@@ -91,6 +93,7 @@ func (rr *RemoteRender) runReader() {
 			rr.readErrs <- err
 			return
 		}
+		log.Println("rr: recieved order")
 
 		select {
 		case rr.Orders <- order:
@@ -104,19 +107,24 @@ func (rr *RemoteRender) runWriter() {
 	for {
 		select {
 		case Assignment := <-rr.assignments:
-			err := encoder.Encode(Assignment)
+			log.Println("rr: sending assign")
+			err := encoder.Encode(UpdateBulk{Assignment: &Assignment})
 			if err != nil {
 				rr.writeErrs <- err
 				return
 			}
+			rr.Orders = Assignment.Orders
 		case field := <-rr.localUpdates:
-			err := encoder.Encode(field)
+			//log.Println("rr: sending field", len(field.Cells))
+			err := encoder.Encode(UpdateBulk{Field: field})
+			//log.Println("rr: sent field")
 			if err != nil {
 				rr.writeErrs <- err
 				return
 			}
 		case State := <-rr.localStateUpdates:
-			err := encoder.Encode(State)
+			log.Println("rr: sending state")
+			err := encoder.Encode(UpdateBulk{GameState: &State})
 			if err != nil {
 				rr.writeErrs <- err
 				return

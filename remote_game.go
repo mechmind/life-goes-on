@@ -13,6 +13,7 @@ type RemoteGame struct {
 	render              Render
 	Orders              chan Order
 	readErrs, writeErrs chan error
+	cells []Cell
 }
 
 func ConnectRemoteGame(straddr string) (*RemoteGame, error) {
@@ -59,30 +60,33 @@ func (rg *RemoteGame) Run() {
 
 func (rg *RemoteGame) runReader() {
 	decoder := gob.NewDecoder(rg.conn)
-	var i interface{}
 	for {
-		err := decoder.Decode(&i)
+		var ub UpdateBulk
+		err := decoder.Decode(&ub)
 		if err != nil {
 			rg.readErrs <- err
 			return
 		}
 
-		switch i.(type) {
-		case *Field:
+		switch {
+		case ub.Field != nil:
 			// is an update
-			field := i.(*Field)
+			field := ub.Field
+			//log.Println("rg: got field", len(field.Cells))
 			rg.fixField(field)
 			rg.render.HandleUpdate(field)
-		case Assignment:
+		case ub.Assignment != nil:
 			// is an assignment
-			ass := i.(Assignment)
+			ass := *ub.Assignment
+			log.Println("rg: got assignment")
 			rg.render.AssignSquad(ass.Id, rg.Orders)
-		case GameState:
+		case ub.GameState != nil:
 			// is an game state
-			State := i.(GameState)
+			State := *ub.GameState
+			log.Println("rg: got state")
 			rg.render.HandleGameState(State)
 		default:
-			rg.readErrs <- errors.New("unknown type decoded")
+			rg.readErrs <- errors.New("all bulk fields are nil")
 			return
 		}
 	}
@@ -116,5 +120,10 @@ func (rg *RemoteGame) fixField(field *Field) {
 			u := field.Units[idx].Unit.(*Corpse)
 			u.field = field
 		}
+	}
+	if field.Cells != nil {
+		rg.cells = field.Cells
+	} else {
+		field.Cells = rg.cells
 	}
 }

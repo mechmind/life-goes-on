@@ -11,6 +11,7 @@ const (
 
 var (
 	singlePlayerRules = Rules{minPlayers: 1, maxPlayers: 1}
+	duelRules = Rules{minPlayers: 2, maxPlayers: 2}
 )
 
 type Dispatcher struct {
@@ -47,10 +48,10 @@ func NewDispatcher(r Rules) *Dispatcher {
 		time: NewTime(TIME_TICKS_PER_SEC)}
 }
 
-func (d *Dispatcher) AttachPlayer(r Render) int {
+func (d *Dispatcher) AttachPlayer(r Render) {
 	req := PlayerReq{Player{render: r}, DISP_ATTACH, -1, make(chan int, 1)}
 	d.playerQueue <- req
-	return <-req.resp
+	<-req.resp
 }
 
 func (d *Dispatcher) DetachPlayer(Id int) {
