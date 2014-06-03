@@ -34,7 +34,7 @@ func (qp *QuarterPlan) CreateQuarters(f *Field) {
 	}
 }
 
-func (qp *QuarterPlan) MakeHouse(f *Field, coord CellCoord) {
+func (qp *QuarterPlan) MakeHouse(f *Field, Coord CellCoord) {
 	// select size for new house (2..4) x (2..4)
 	size := CellCoord{f.rng.Intn(3) + 2, f.rng.Intn(3) + 2}
 	// select placement for topleft corner
@@ -47,19 +47,19 @@ func (qp *QuarterPlan) MakeHouse(f *Field, coord CellCoord) {
 	}
 
 	// merge foundament into field
-	xLow := coord.X*QUARTER_HOUSE_SIZE + corner.X*QUARTER_BLOCK_SIZE + QUARTER_PADDING
-	yLow := coord.Y*QUARTER_HOUSE_SIZE + corner.Y*QUARTER_BLOCK_SIZE + QUARTER_PADDING
+	xLow := Coord.X*QUARTER_HOUSE_SIZE + corner.X*QUARTER_BLOCK_SIZE + QUARTER_PADDING
+	yLow := Coord.Y*QUARTER_HOUSE_SIZE + corner.Y*QUARTER_BLOCK_SIZE + QUARTER_PADDING
 
-	xHig := coord.X*QUARTER_HOUSE_SIZE + (corner.X+size.X)*QUARTER_BLOCK_SIZE + QUARTER_PADDING
-	yHig := coord.Y*QUARTER_HOUSE_SIZE + (corner.Y+size.Y)*QUARTER_BLOCK_SIZE + QUARTER_PADDING
+	xHig := Coord.X*QUARTER_HOUSE_SIZE + (corner.X+size.X)*QUARTER_BLOCK_SIZE + QUARTER_PADDING
+	yHig := Coord.Y*QUARTER_HOUSE_SIZE + (corner.Y+size.Y)*QUARTER_BLOCK_SIZE + QUARTER_PADDING
 
 	for i := xLow; i <= xHig; i++ {
-		f.CellAt(CellCoord{i, yLow}).passable = false
-		f.CellAt(CellCoord{i, yHig}).passable = false
+		f.CellAt(CellCoord{i, yLow}).Passable = false
+		f.CellAt(CellCoord{i, yHig}).Passable = false
 	}
 	for j := yLow; j <= yHig; j++ {
-		f.CellAt(CellCoord{xLow, j}).passable = false
-		f.CellAt(CellCoord{xHig, j}).passable = false
+		f.CellAt(CellCoord{xLow, j}).Passable = false
+		f.CellAt(CellCoord{xHig, j}).Passable = false
 	}
 	// make main door
 	hasBackDoor := f.rng.Intn(100) < QUARTER_BACKDOOR_PROBABILITY
@@ -69,15 +69,15 @@ func (qp *QuarterPlan) MakeHouse(f *Field, coord CellCoord) {
 		bdoorPos := f.rng.Intn((xHig-xLow-1)/2)*2 + xLow + 1
 		if f.rng.Int31n(1) == 0 {
 			// bottom wall
-			f.CellAt(CellCoord{doorPos, yLow}).passable = true
+			f.CellAt(CellCoord{doorPos, yLow}).Passable = true
 			if hasBackDoor {
-				f.CellAt(CellCoord{bdoorPos, yHig}).passable = true
+				f.CellAt(CellCoord{bdoorPos, yHig}).Passable = true
 			}
 		} else {
 			// top wall
-			f.CellAt(CellCoord{doorPos, yHig}).passable = true
+			f.CellAt(CellCoord{doorPos, yHig}).Passable = true
 			if hasBackDoor {
-				f.CellAt(CellCoord{bdoorPos, yLow}).passable = true
+				f.CellAt(CellCoord{bdoorPos, yLow}).Passable = true
 			}
 		}
 	} else {
@@ -86,15 +86,15 @@ func (qp *QuarterPlan) MakeHouse(f *Field, coord CellCoord) {
 		bdoorPos := f.rng.Intn((yHig-xLow-1)/2)*2 + yLow + 1
 		if f.rng.Int31n(1) == 0 {
 			// left wall
-			f.CellAt(CellCoord{xLow, doorPos}).passable = true
+			f.CellAt(CellCoord{xLow, doorPos}).Passable = true
 			if hasBackDoor {
-				f.CellAt(CellCoord{xHig, bdoorPos}).passable = true
+				f.CellAt(CellCoord{xHig, bdoorPos}).Passable = true
 			}
 		} else {
 			// right wall
-			f.CellAt(CellCoord{xHig, doorPos}).passable = true
+			f.CellAt(CellCoord{xHig, doorPos}).Passable = true
 			if hasBackDoor {
-				f.CellAt(CellCoord{xLow, bdoorPos}).passable = true
+				f.CellAt(CellCoord{xLow, bdoorPos}).Passable = true
 			}
 		}
 	}
@@ -106,15 +106,15 @@ func (qp *QuarterPlan) MakeHouse(f *Field, coord CellCoord) {
 		var j int
 		for j = yLow + 1; j <= yHig; j++ {
 			cell := f.CellAt(CellCoord{wallX, j})
-			if cell.passable {
-				cell.passable = false
+			if cell.Passable {
+				cell.Passable = false
 			} else {
 				break
 			}
 		}
 		// make a door in that wall
 		doorPos := f.rng.Intn((j-yLow)/2)*2 + yLow + 1
-		f.CellAt(CellCoord{wallX, doorPos}).passable = true
+		f.CellAt(CellCoord{wallX, doorPos}).Passable = true
 	}
 
 	if size.Y > 2 && f.rng.Intn(100) < QUARTER_INTWALL_PROBABILITY {
@@ -123,15 +123,15 @@ func (qp *QuarterPlan) MakeHouse(f *Field, coord CellCoord) {
 		var i int
 		for i = xLow + 1; i <= xHig; i++ {
 			cell := f.CellAt(CellCoord{i, wallY})
-			if cell.passable {
-				cell.passable = false
+			if cell.Passable {
+				cell.Passable = false
 			} else {
 				break
 			}
 		}
 		// make a door in that wall
 		doorPos := f.rng.Intn((i-xLow)/2)*2 + xLow + 1
-		f.CellAt(CellCoord{doorPos, wallY}).passable = true
+		f.CellAt(CellCoord{doorPos, wallY}).Passable = true
 	}
 
 }

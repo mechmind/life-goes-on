@@ -19,7 +19,7 @@ func (f *FieldView) UnitsByDistance(src UnitCoord) []UnitPresence {
 func (f *FieldView) UnitsInRange(src UnitCoord, r float32) []UnitPresence {
 	presence := make([]UnitPresence, 0)
 	for _, u := range f.field.Units {
-		if src.Distance(u.coord) < r {
+		if src.Distance(u.Coord) < r {
 			presence = append(presence, u)
 		}
 	}
@@ -32,25 +32,25 @@ func (f *FieldView) UnitByID(Id int) (UnitCoord, Unit) {
 	return f.field.UnitByID(Id)
 }
 
-func (f *FieldView) Reown(Id int, agent Agent) {
-	f.field.Units[Id].agent = agent
+func (f *FieldView) Reown(Id int, Agent Agent) {
+	f.field.Units[Id].Agent = Agent
 }
 
-func (f *FieldView) ReplaceUnit(Id int, agent Agent, u Unit) {
-	coord := f.field.Units[Id].coord
-	f.field.ReplaceUnit(Id, coord, agent, u)
+func (f *FieldView) ReplaceUnit(Id int, Agent Agent, u Unit) {
+	Coord := f.field.Units[Id].Coord
+	f.field.ReplaceUnit(Id, Coord, Agent, u)
 }
 
-func (f *FieldView) FindPath(from, to CellCoord) Path {
-	return f.field.FindPath(from, to)
+func (f *FieldView) FindPath(From, To CellCoord) Path {
+	return f.field.FindPath(From, To)
 }
 
-func (f *FieldView) HaveLOS(from, to UnitCoord) bool {
-	return f.field.HaveLOS(from, to)
+func (f *FieldView) HaveLOS(From, To UnitCoord) bool {
+	return f.field.HaveLOS(From, To)
 }
 
-func (f *FieldView) ThrowGren(from, to UnitCoord) {
-	f.field.ThrowGren(from, to)
+func (f *FieldView) ThrowGren(From, To UnitCoord) {
+	f.field.ThrowGren(From, To)
 }
 
 // unitsByDistance used to sort units on field, nearest to src first
@@ -65,7 +65,7 @@ func (u *unitsByDistance) Len() int {
 }
 
 func (u *unitsByDistance) Less(i, j int) bool {
-	return u.src.Distance(u.Units[i].coord) < u.src.Distance(u.Units[j].coord)
+	return u.src.Distance(u.Units[i].Coord) < u.src.Distance(u.Units[j].Coord)
 }
 
 func (u *unitsByDistance) Swap(i, j int) {

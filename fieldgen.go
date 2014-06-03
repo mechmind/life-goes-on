@@ -25,15 +25,15 @@ func populateField(field *Field) {
 	field.PlaceAgent(crowd)
 
 	for idx := 0; idx < TOTAL_DAMSELS; idx++ {
-		var coord UnitCoord
+		var Coord UnitCoord
 		for {
-			coord = UnitCoord{field.rng.Float32()*100 + 1, field.rng.Float32()*100 + 1}
-			if field.CellAt(coord.Cell()).passable {
+			Coord = UnitCoord{field.rng.Float32()*100 + 1, field.rng.Float32()*100 + 1}
+			if field.CellAt(Coord.Cell()).Passable {
 				break
 			}
 		}
 		dam := NewDamsel(field)
-		dam.WanderTarget = coord
+		dam.WanderTarget = Coord
 		field.PlaceUnit(dam.WanderTarget, crowd, dam)
 	}
 }

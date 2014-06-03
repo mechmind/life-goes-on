@@ -73,45 +73,45 @@ func copyField(f *Field) *Field {
 func (f *Field) Tick(tick int64) {
 	view := &FieldView{f}
 
-	for _, agent := range f.Agents {
-		if thinker, ok := agent.(Thinker); ok {
+	for _, Agent := range f.Agents {
+		if thinker, ok := Agent.(Thinker); ok {
 			thinker.Think(view, tick)
 		}
 	}
 
 	for _, up := range f.Units {
-		up.agent.HandleUnit(view, up.Unit, up.coord)
+		up.Agent.HandleUnit(view, up.Unit, up.Coord)
 	}
 
 	// handle exploded grens
 	for i := 0; i < len(f.Grens); {
-		if f.Grens[i].booming == SOL_GREN_TICK_CAP {
+		if f.Grens[i].Booming == SOL_GREN_TICK_CAP {
 			// remove that gren
 			copy(f.Grens[i:], f.Grens[i+1:])
 			f.Grens = f.Grens[:len(f.Grens)-1]
 			continue
-		} else if f.Grens[i].booming > 0 {
-			f.Grens[i].booming++
+		} else if f.Grens[i].Booming > 0 {
+			f.Grens[i].Booming++
 		}
 		i++
 	}
 
 	// handle flying grens
 	for idx, gren := range f.Grens {
-		toward := NormTowardCoord(gren.from, gren.to).Mult(SOL_GREN_SPEED)
-		if gren.from.Distance(gren.to) < FLOAT_ERROR && f.Grens[idx].booming == 0 {
+		toward := NormTowardCoord(gren.From, gren.To).Mult(SOL_GREN_SPEED)
+		if gren.From.Distance(gren.To) < FLOAT_ERROR && f.Grens[idx].Booming == 0 {
 			// BOOM
-			f.Grens[idx].booming = 1 // for animation
-			for _, u := range view.UnitsInRange(gren.to, SOL_GREN_RADIUS) {
-				if f.HaveLOS(u.coord, gren.to) {
+			f.Grens[idx].Booming = 1 // for animation
+			for _, u := range view.UnitsInRange(gren.To, SOL_GREN_RADIUS) {
+				if f.HaveLOS(u.Coord, gren.To) {
 					u.Unit.RecieveDamage(-1, SOL_GREN_DAMAGE)
 				}
 			}
 		}
-		if gren.from.Distance(gren.to) < toward.Distance(UnitCoord{0, 0}) {
-			f.Grens[idx].from = gren.to
+		if gren.From.Distance(gren.To) < toward.Distance(UnitCoord{0, 0}) {
+			f.Grens[idx].From = gren.To
 		} else {
-			f.Grens[idx].from = gren.from.AddCoord(toward)
+			f.Grens[idx].From = gren.From.AddCoord(toward)
 		}
 	}
 
@@ -150,10 +150,10 @@ func (f *Field) Tick(tick int64) {
 	}
 }
 
-func (f *Field) PlaceUnit(c UnitCoord, agent Agent, u Unit) error {
-	f.Units = append(f.Units, UnitPresence{c, agent, u})
+func (f *Field) PlaceUnit(c UnitCoord, Agent Agent, u Unit) error {
+	f.Units = append(f.Units, UnitPresence{c, Agent, u})
 	u.SetID(len(f.Units) - 1)
-	agent.AttachUnit(u)
+	Agent.AttachUnit(u)
 	return nil
 }
 
@@ -162,10 +162,10 @@ func (f *Field) PlaceAgent(a Agent) error {
 	return nil
 }
 
-func (f *Field) ReplaceUnit(Id int, c UnitCoord, agent Agent, u Unit) error {
-	f.Units[Id] = UnitPresence{c, agent, u}
+func (f *Field) ReplaceUnit(Id int, c UnitCoord, Agent Agent, u Unit) error {
+	f.Units[Id] = UnitPresence{c, Agent, u}
 	u.SetID(Id)
-	agent.AttachUnit(u)
+	Agent.AttachUnit(u)
 	return nil
 }
 
@@ -175,14 +175,14 @@ func (f *Field) CellAt(c CellCoord) *Cell {
 }
 
 func (f *Field) UnitByID(Id int) (UnitCoord, Unit) {
-	return f.Units[Id].coord, f.Units[Id].Unit
+	return f.Units[Id].Coord, f.Units[Id].Unit
 }
 
 func (f *Field) UnitsInRange(center UnitCoord, radius float32) []UnitPresence {
 	var Units []UnitPresence
 
 	for _, up := range f.Units {
-		if center.Distance(up.coord) < radius {
+		if center.Distance(up.Coord) < radius {
 			Units = append(Units, up)
 		}
 	}
@@ -190,31 +190,31 @@ func (f *Field) UnitsInRange(center UnitCoord, radius float32) []UnitPresence {
 }
 
 // return true if have line of sight from 'from' to 'to'
-func (f *Field) TraceShot(from, to UnitCoord, tid int) (atid int, atcoord UnitCoord) {
+func (f *Field) TraceShot(From, To UnitCoord, tid int) (atid int, atcoord UnitCoord) {
 	// misshots start when accuracy starting do decay
-	if from.Distance(to) <= SOL_ACC_DECAY_START {
-		return tid, to
+	if From.Distance(To) <= SOL_ACC_DECAY_START {
+		return tid, To
 	}
 
-	toward := NormTowardCoord(from, to)
+	toward := NormTowardCoord(From, To)
 
-	low := UnitCoord{fmin(from.X, to.X), fmin(from.Y, to.Y)}.Cell()
-	high := UnitCoord{fmax(from.X, to.X), fmax(from.Y, to.Y)}.Cell()
+	low := UnitCoord{fmin(From.X, To.X), fmin(From.Y, To.Y)}.Cell()
+	high := UnitCoord{fmax(From.X, To.X), fmax(From.Y, To.Y)}.Cell()
 
 	Units := make(map[CellCoord][]UnitPresence)
 	for _, up := range f.Units {
-		cellCoord := up.coord.Cell()
+		cellCoord := up.Coord.Cell()
 		if CheckCellCoordBounds(cellCoord, low, high) {
 			us := append(Units[cellCoord], up)
 			Units[cellCoord] = us
 		}
 	}
 
-	current := from.AddCoord(toward.Mult(SOL_ACC_DECAY_START))
+	current := From.AddCoord(toward.Mult(SOL_ACC_DECAY_START))
 	for {
 		// always check next and current cell passability because we can advance 2 cells
 		// on one step
-		if f.CellAt(current.Cell()).passable == false {
+		if f.CellAt(current.Cell()).Passable == false {
 			return -1, current
 		}
 
@@ -223,7 +223,7 @@ func (f *Field) TraceShot(from, to UnitCoord, tid int) (atid int, atcoord UnitCo
 		for _, u := range unitsThere {
 			if f.rng.Intn(100) < SOL_MISSHOT_PROB {
 				// misshot
-				return u.Unit.GetID(), u.coord
+				return u.Unit.GetID(), u.Coord
 			}
 		}
 
@@ -233,17 +233,17 @@ func (f *Field) TraceShot(from, to UnitCoord, tid int) (atid int, atcoord UnitCo
 			for _, u := range unitsHere {
 				if f.rng.Intn(100) < SOL_MISSHOT_PROB {
 					// misshot
-					return u.Unit.GetID(), u.coord
+					return u.Unit.GetID(), u.Coord
 				}
 			}
 		}
 
-		if current == to {
-			return tid, to
+		if current == To {
+			return tid, To
 		}
 
-		if current.Distance(to) < 1 {
-			current = to
+		if current.Distance(To) < 1 {
+			current = To
 		} else {
 			current = current.AddCoord(toward)
 		}
@@ -251,28 +251,28 @@ func (f *Field) TraceShot(from, to UnitCoord, tid int) (atid int, atcoord UnitCo
 	//return tid, to
 }
 
-func (f *Field) HaveLOS(from, to UnitCoord) bool {
-	toward := NormTowardCoord(from, to)
+func (f *Field) HaveLOS(From, To UnitCoord) bool {
+	toward := NormTowardCoord(From, To)
 
-	current := from
+	current := From
 	for {
 		// always check next and current cell passability because we can advance 2 cells
 		// on one step
-		if f.CellAt(current.Cell()).passable == false {
+		if f.CellAt(current.Cell()).Passable == false {
 			return false
 		}
 
-		if current == to {
+		if current == To {
 			return true
 		}
 
-		nextCell := from.Cell().AddCoord(NextCellCoord(from, toward)).Bound(0, 0, 1024, 1024)
-		if f.CellAt(nextCell).passable == false {
+		nextCell := From.Cell().AddCoord(NextCellCoord(From, toward)).Bound(0, 0, 1024, 1024)
+		if f.CellAt(nextCell).Passable == false {
 			return false
 		}
 
-		if current.Distance(to) < 1 {
-			current = to
+		if current.Distance(To) < 1 {
+			current = To
 		} else {
 			current = current.AddCoord(toward)
 		}
@@ -282,11 +282,11 @@ func (f *Field) HaveLOS(from, to UnitCoord) bool {
 func (f *Field) CheckPassability(src, dst CellCoord) Passability {
 	dstCell := f.CellAt(dst)
 	srcCell := f.CellAt(src)
-	if !dstCell.passable {
+	if !dstCell.Passable {
 		//log.Println("field: cannot pass to dst", dst, "- is a wall")
 		return PS_IMPASSABLE
 	}
-	if iabs(int(srcCell.elevation-dstCell.elevation)) > 2 {
+	if iabs(int(srcCell.Elevation-dstCell.Elevation)) > 2 {
 		//log.Println("field: cannot pass to dst", dst, "- elevation is too high")
 		return PS_IMPASSABLE
 	}
@@ -296,7 +296,7 @@ func (f *Field) CheckPassability(src, dst CellCoord) Passability {
 		s1 := src.AddCoord(direction.ClockwiseSibling())
 		s2 := src.AddCoord(direction.CounterclockwiseSibling())
 		//log.Println("field: d:", direction, "siblings:", s1, s2)
-		if !f.CellAt(s1).passable || !f.CellAt(s2).passable {
+		if !f.CellAt(s1).Passable || !f.CellAt(s2).Passable {
 			//log.Println("field: cannot pass to dst", dst, "- diagonal move with blocking siblings")
 			return PS_IMPASSABLE
 		}
@@ -304,26 +304,26 @@ func (f *Field) CheckPassability(src, dst CellCoord) Passability {
 	return PS_PASSABLE
 }
 
-func (f *Field) MoveMe(Id int, coord UnitCoord) UnitCoord {
-	f.Units[Id].coord = coord
-	return coord
+func (f *Field) MoveMe(Id int, Coord UnitCoord) UnitCoord {
+	f.Units[Id].Coord = Coord
+	return Coord
 }
 
 func (f *Field) KillMe(Id int) {
 	// kill unit
-	f.Units[Id].agent.DetachUnit(f.Units[Id].Unit)
+	f.Units[Id].Agent.DetachUnit(f.Units[Id].Unit)
 	Unit := f.Units[Id].Unit
-	f.Units[Id] = UnitPresence{coord: f.Units[Id].coord, agent: nopAgent,
+	f.Units[Id] = UnitPresence{Coord: f.Units[Id].Coord, Agent: nopAgent,
 		Unit: &Corpse{f, Id, Unit, 0}}
 }
 
-func (f *Field) ThrowGren(from, to UnitCoord) {
-	f.Grens = append(f.Grens, FlyingGren{from, to, 0})
+func (f *Field) ThrowGren(From, To UnitCoord) {
+	f.Grens = append(f.Grens, FlyingGren{From, To, 0})
 }
 
-func (f *Field) FindPath(from, to CellCoord) Path {
+func (f *Field) FindPath(From, To CellCoord) Path {
 	finder := NewPathFinder(f)
-	path := finder.FindPath(from, to)
+	path := finder.FindPath(From, To)
 	f.pathfinder = finder //FIXME(pathfind): remove after debug
 	return path
 }
@@ -333,7 +333,7 @@ func (f *Field) FindPath(from, to CellCoord) Path {
 func (f *Field) makePassableField() {
 	for i := 1; i < f.XSize-1; i++ {
 		for j := 1; j < f.YSize-1; j++ {
-			f.CellAt(CellCoord{i, j}).passable = true
+			f.CellAt(CellCoord{i, j}).Passable = true
 		}
 	}
 }
@@ -343,43 +343,41 @@ func (f *Field) computeSlopes() {
 	for i := 0; i < f.XSize-1; i++ {
 		for j := 0; j < f.YSize-1; j++ {
 			// compare cell with right and down neighbours
-			coord := CellCoord{i, j}
-			cell := f.CellAt(coord)
-			right := f.CellAt(coord.Add(1, 0))
-			down := f.CellAt(coord.Add(0, 1))
+			Coord := CellCoord{i, j}
+			cell := f.CellAt(Coord)
+			right := f.CellAt(Coord.Add(1, 0))
+			down := f.CellAt(Coord.Add(0, 1))
 
-			switch cell.elevation - right.elevation {
+			switch cell.Elevation - right.Elevation {
 			case 1:
-				right.slopes |= SLOPE_LEFT
+				right.Slopes |= SLOPE_LEFT
 			case -1:
-				cell.slopes |= SLOPE_RIGHT
+				cell.Slopes |= SLOPE_RIGHT
 			}
 
-			switch cell.elevation - down.elevation {
+			switch cell.Elevation - down.Elevation {
 			case 1:
-				down.slopes |= SLOPE_UP
+				down.Slopes |= SLOPE_UP
 			case -1:
-				cell.slopes |= SLOPE_DOWN
+				cell.Slopes |= SLOPE_DOWN
 			}
 		}
 	}
 }
 
 type UnitPresence struct {
-	coord UnitCoord
-	agent Agent
+	Coord UnitCoord
+	Agent Agent
 	Unit  Unit
 }
 
 type Cell struct {
-	elevation int16
-	slopes    uint8
-	passable  bool
-	object    Object
-	items     []Item
+	Elevation int16
+	Slopes    uint8
+	Passable  bool
 }
 
 type FlyingGren struct {
-	from, to UnitCoord
-	booming  int8
+	From, To UnitCoord
+	Booming  int8
 }

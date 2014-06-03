@@ -155,7 +155,7 @@ func (lr *LocalRender) Run() {
 			// update rendering state
 			// handle grens
 			for _, gren := range field.Grens {
-				if gren.from.Cell() == sv.GrenTo {
+				if gren.From.Cell() == sv.GrenTo {
 					sv.GrenTo = CellCoord{0, 0}
 					break
 				}
@@ -169,7 +169,7 @@ func (lr *LocalRender) Run() {
 				switch {
 				case ev.Key == termbox.MouseLeft:
 					if (CheckCellCoordBounds(cursorPos, CellCoord{0, 0}, CellCoord{1024, 1024}) &&
-						field.CellAt(cursorPos).passable) {
+						field.CellAt(cursorPos).Passable) {
 						sendOrder(lr.Orders, Order{ORDER_MOVE, cursorPos})
 						sv.movingTo = cursorPos
 					}
@@ -299,7 +299,7 @@ func drawField(f *Field, pos CellCoord, sv squadView, gameState GameState) {
 				termbox.SetCell(screenPos.X, screenPos.Y, TUI_OFFSCREEN_CHAR,
 					TUI_DEFAULT_FG, TUI_DEFAULT_BG)
 			} else {
-				if f.CellAt(tileCell).passable {
+				if f.CellAt(tileCell).Passable {
 					termbox.SetCell(screenPos.X, screenPos.Y, TUI_FLAT_CHAR,
 						TUI_DEFAULT_FG, TUI_DEFAULT_BG)
 				} else {
@@ -312,7 +312,7 @@ func drawField(f *Field, pos CellCoord, sv squadView, gameState GameState) {
 
 	// render units
 	for _, up := range f.Units {
-		unitCell := up.coord.Cell()
+		unitCell := up.Coord.Cell()
 		if !CheckCellCoordBounds(unitCell, pos, upperBound) {
 			// unit is not visible
 			continue
@@ -332,16 +332,16 @@ func drawField(f *Field, pos CellCoord, sv squadView, gameState GameState) {
 
 	// render grens
 	for _, gren := range f.Grens {
-		if gren.booming == 0 {
+		if gren.Booming == 0 {
 			// flying gren
-			if CheckCellCoordBounds(gren.from.Cell(), pos, upperBound) {
-				screenPos := gren.from.Cell().AddCoord(pos.Mult(-1))
+			if CheckCellCoordBounds(gren.From.Cell(), pos, upperBound) {
+				screenPos := gren.From.Cell().AddCoord(pos.Mult(-1))
 				termbox.SetCell(screenPos.X, screenPos.Y, TUI_FLYING_GREN_TARGET_CHAR,
 					TUI_FLYING_GREN_TARGET_FG, TUI_DEFAULT_BG)
 			}
 		} else {
 			// explosion
-			center := gren.to
+			center := gren.To
 			for i := -SOL_GREN_RADIUS; i <= SOL_GREN_RADIUS; i++ {
 				for j := -SOL_GREN_RADIUS; j <= SOL_GREN_RADIUS; j++ {
 					cellCoord := center.Cell().Add(i, j)
@@ -350,7 +350,7 @@ func drawField(f *Field, pos CellCoord, sv squadView, gameState GameState) {
 						center.Distance(cellCoord.UnitCenter()) < SOL_GREN_RADIUS &&
 						f.HaveLOS(center, cellCoord.UnitCenter()) {
 						// in a range and visible
-						boomingView := boomingColors[gren.booming]
+						boomingView := boomingColors[gren.Booming]
 						termbox.SetCell(screenPos.X, screenPos.Y,
 							boomingView.ch, boomingView.fg, boomingView.bg)
 					}
@@ -367,12 +367,12 @@ func drawField(f *Field, pos CellCoord, sv squadView, gameState GameState) {
 	// render pathfind
 	// FIXME(pathfind)
 	if p := f.pathfinder; p != nil {
-		for coord, cell := range p.Cells {
+		for Coord, cell := range p.Cells {
 			break
-			if !CheckCellCoordBounds(coord, pos, upperBound) {
+			if !CheckCellCoordBounds(Coord, pos, upperBound) {
 				continue
 			}
-			screenPos := coord.AddCoord(pos.Mult(-1))
+			screenPos := Coord.AddCoord(pos.Mult(-1))
 			switch {
 			case cell.closed:
 				termbox.SetCell(screenPos.X, screenPos.Y, TUI_FLAT_CHAR,
@@ -382,12 +382,12 @@ func drawField(f *Field, pos CellCoord, sv squadView, gameState GameState) {
 					TUI_DEFAULT_FG, TUI_PATHFIND_OPEN_BG)
 			}
 		}
-		for _, coord := range p.path {
+		for _, Coord := range p.path {
 			break
-			if !CheckCellCoordBounds(coord, pos, upperBound) {
+			if !CheckCellCoordBounds(Coord, pos, upperBound) {
 				continue
 			}
-			screenPos := coord.AddCoord(pos.Mult(-1))
+			screenPos := Coord.AddCoord(pos.Mult(-1))
 			termbox.SetCell(screenPos.X, screenPos.Y, TUI_FLAT_CHAR,
 				TUI_DEFAULT_FG, TUI_PATHFIND_PATH_BG)
 		}

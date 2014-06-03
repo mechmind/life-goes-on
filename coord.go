@@ -30,9 +30,9 @@ func (u UnitCoord) Mult(value float32) UnitCoord {
 	return UnitCoord{u.X * value, u.Y * value}
 }
 
-func (u UnitCoord) Distance(to UnitCoord) float32 {
-	dx := u.X - to.X
-	dy := u.Y - to.Y
+func (u UnitCoord) Distance(To UnitCoord) float32 {
+	dx := u.X - To.X
+	dy := u.Y - To.Y
 	if fabs(dx) < FLOAT_ERROR && fabs(dy) < FLOAT_ERROR {
 		return 0
 	}
@@ -144,9 +144,9 @@ func (c CellCoord) Bound(lx, ly, hx, hy int) CellCoord {
 	return CellCoord{ibound(c.X, lx, hx), ibound(c.Y, ly, hy)}
 }
 
-func (c CellCoord) Distance(to CellCoord) float32 {
-	dx := c.X - to.X
-	dy := c.Y - to.Y
+func (c CellCoord) Distance(To CellCoord) float32 {
+	dx := c.X - To.X
+	dy := c.Y - To.Y
 	return float32(math.Sqrt(float64(dx*dx + dy*dy)))
 }
 

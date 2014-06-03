@@ -20,57 +20,57 @@ func NewPathFinder(f *Field) *PathFinder {
 	return &PathFinder{field: f, Cells: make(map[CellCoord]PathCell), open: &WeightedList{}}
 }
 
-func (p *PathFinder) FindPath(from, to CellCoord) Path {
-	p.source = from
-	p.Target = to
+func (p *PathFinder) FindPath(From, To CellCoord) Path {
+	p.source = From
+	p.Target = To
 
 	// initialize algo
-	pc := PathCell{from, from, 0, true, true, false}
-	p.open.Insert(from, from.Distance(to))
-	p.Cells[from] = pc
+	pc := PathCell{From, From, 0, true, true, false}
+	p.open.Insert(From, From.Distance(To))
+	p.Cells[From] = pc
 
 	// run algo
 	return p.findPath()
 }
 
-func (p *PathFinder) CellAt(coord CellCoord) PathCell {
-	cell, ok := p.Cells[coord]
+func (p *PathFinder) CellAt(Coord CellCoord) PathCell {
+	cell, ok := p.Cells[Coord]
 	if !ok {
-		cell = PathCell{coord, CellCoord{}, math.MaxFloat32, false, false, false}
-		if p.field.CellAt(coord).passable {
+		cell = PathCell{Coord, CellCoord{}, math.MaxFloat32, false, false, false}
+		if p.field.CellAt(Coord).Passable {
 			cell.visible = true
 		}
-		p.Cells[coord] = cell
+		p.Cells[Coord] = cell
 	}
 
 	return cell
 }
 
-func (p *PathFinder) closeCell(coord CellCoord) {
-	pc := p.Cells[coord]
+func (p *PathFinder) closeCell(Coord CellCoord) {
+	pc := p.Cells[Coord]
 	pc.closed = true
-	p.Cells[coord] = pc
-	p.open.Remove(coord)
+	p.Cells[Coord] = pc
+	p.open.Remove(Coord)
 }
 
-func (p *PathFinder) openCell(coord CellCoord, weight float32) {
-	pc := p.Cells[coord]
+func (p *PathFinder) openCell(Coord CellCoord, weight float32) {
+	pc := p.Cells[Coord]
 	pc.open = true
-	p.Cells[coord] = pc
-	p.open.Insert(coord, weight)
+	p.Cells[Coord] = pc
+	p.open.Insert(Coord, weight)
 }
 
 func (p *PathFinder) updateCell(cell PathCell) {
-	oldCell := p.Cells[cell.coord]
-	weight := cell.cost + cell.coord.Distance(p.Target)
+	oldCell := p.Cells[cell.Coord]
+	weight := cell.cost + cell.Coord.Distance(p.Target)
 	if oldCell.open {
-		p.open.Replace(cell.coord, weight)
+		p.open.Replace(cell.Coord, weight)
 	} else {
-		p.open.Insert(cell.coord, weight)
+		p.open.Insert(cell.Coord, weight)
 	}
 	// restore visibility
 	cell.visible = oldCell.visible
-	p.Cells[cell.coord] = cell
+	p.Cells[cell.Coord] = cell
 }
 
 func (p *PathFinder) Neighbours(center CellCoord) []PathCell {
@@ -84,13 +84,13 @@ func (p *PathFinder) Neighbours(center CellCoord) []PathCell {
 func (p *PathFinder) findPath() Path {
 	// just a*
 	for {
-		coord, ok := p.open.Pop()
+		Coord, ok := p.open.Pop()
 		if !ok {
 			// no more cells, no way to target
 			return nil
 		}
 
-		if coord == p.Target {
+		if Coord == p.Target {
 			// ok, path found
 
 			path := p.backtrackPath()
@@ -99,11 +99,11 @@ func (p *PathFinder) findPath() Path {
 		}
 
 		// close cell
-		p.closeCell(coord)
-		cell := p.CellAt(coord)
+		p.closeCell(Coord)
+		cell := p.CellAt(Coord)
 
 		// check neighbours
-		neighbours := p.Neighbours(coord)
+		neighbours := p.Neighbours(Coord)
 		setVisibility(neighbours)
 
 		var newCost float32
@@ -122,7 +122,7 @@ func (p *PathFinder) findPath() Path {
 
 				if newCost < neighbours[idx].cost {
 					// update path for pc
-					neighbours[idx].parent = coord
+					neighbours[idx].parent = Coord
 					neighbours[idx].cost = newCost
 					neighbours[idx].open = true
 					p.updateCell(neighbours[idx])
@@ -138,10 +138,10 @@ func (p *PathFinder) backtrackPath() Path {
 	curr := p.Cells[p.Target]
 	for {
 		curr = p.Cells[curr.parent]
-		if curr.coord == p.source {
+		if curr.Coord == p.source {
 			return path
 		}
-		path = append(path, curr.coord)
+		path = append(path, curr.Coord)
 	}
 }
 
@@ -168,23 +168,23 @@ func setVisibility(neighbours []PathCell) {
 
 type Path []CellCoord
 
-func (p *Path) Next() (coord CellCoord, ok bool) {
+func (p *Path) Next() (Coord CellCoord, ok bool) {
 	path := *p
 	if len(path) > 1 {
 		path = path[:len(path)-1]
-		coord = path[len(path)-1]
+		Coord = path[len(path)-1]
 		*p = path
-		return coord, true
+		return Coord, true
 	} else if len(path) == 1 {
-		coord = path[0]
+		Coord = path[0]
 		*p = nil
-		return coord, true
+		return Coord, true
 	} else {
 		return CellCoord{}, false
 	}
 }
 
-func (p *Path) Current() (coord CellCoord, ok bool) {
+func (p *Path) Current() (Coord CellCoord, ok bool) {
 	if len(*p) > 0 {
 		return (*p)[len(*p)-1], true
 	} else {
@@ -193,7 +193,7 @@ func (p *Path) Current() (coord CellCoord, ok bool) {
 }
 
 type PathCell struct {
-	coord, parent CellCoord
+	Coord, parent CellCoord
 	cost          float32
 	visible       bool
 	open, closed  bool
@@ -203,8 +203,8 @@ type WeightedList struct {
 	head *WeightedCell
 }
 
-func (w *WeightedList) Insert(coord CellCoord, weight float32) {
-	wc := &WeightedCell{coord, weight, nil}
+func (w *WeightedList) Insert(Coord CellCoord, weight float32) {
+	wc := &WeightedCell{Coord, weight, nil}
 	if w.head == nil {
 		w.head = wc
 		return
@@ -237,20 +237,20 @@ func (w *WeightedList) Insert(coord CellCoord, weight float32) {
 	}
 }
 
-func (w *WeightedList) Replace(coord CellCoord, weight float32) {
+func (w *WeightedList) Replace(Coord CellCoord, weight float32) {
 	// TODO: optimize
-	w.Remove(coord)
-	w.Insert(coord, weight)
+	w.Remove(Coord)
+	w.Insert(Coord, weight)
 }
 
-func (w *WeightedList) Remove(coord CellCoord) {
+func (w *WeightedList) Remove(Coord CellCoord) {
 	curr := w.head
 
 	if curr == nil {
 		return
 	}
 
-	if curr.coord == coord {
+	if curr.Coord == Coord {
 		w.head = curr.next
 		return
 	}
@@ -263,7 +263,7 @@ func (w *WeightedList) Remove(coord CellCoord) {
 			return
 		}
 
-		if next.coord == coord {
+		if next.Coord == Coord {
 			// cell found
 			curr.next = next.next
 			return
@@ -280,11 +280,11 @@ func (w *WeightedList) Pop() (CellCoord, bool) {
 
 	var cell *WeightedCell
 	cell, w.head = w.head, w.head.next
-	return cell.coord, true
+	return cell.Coord, true
 }
 
 type WeightedCell struct {
-	coord  CellCoord
+	Coord  CellCoord
 	weight float32
 	next   *WeightedCell
 }

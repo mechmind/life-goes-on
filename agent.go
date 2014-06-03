@@ -50,7 +50,7 @@ func (s *Squad) DetachUnit(u Unit) {
 	}
 }
 
-func (s *Squad) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
+func (s *Squad) HandleUnit(f *FieldView, u Unit, Coord UnitCoord) {
 	soldier := u.(*Soldier)
 
 	if soldier.SemifireCounter > 0 {
@@ -59,10 +59,10 @@ func (s *Squad) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
 
 	if s.GrenTo != (CellCoord{0, 0}) && s.GrenTimeout == 0 {
 		GrenTo := s.GrenTo.UnitCenter()
-		if coord.Distance(GrenTo) < SOL_GREN_RANGE && f.HaveLOS(coord, GrenTo) {
+		if Coord.Distance(GrenTo) < SOL_GREN_RANGE && f.HaveLOS(Coord, GrenTo) {
 			// throw gren
 			s.GrenTo = CellCoord{0, 0}
-			f.ThrowGren(coord, GrenTo)
+			f.ThrowGren(Coord, GrenTo)
 			s.GrenTimeout = SOL_GREN_TIMEOUT
 			return
 		}
@@ -70,13 +70,13 @@ func (s *Squad) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
 
 	if s.FireState == ORDER_FIRE ||
 		(s.FireState == ORDER_SEMIFIRE && soldier.SemifireCounter == 0) {
-		byDistance := f.UnitsInRange(coord, soldier.Gunner.FireRange)
+		byDistance := f.UnitsInRange(Coord, soldier.Gunner.FireRange)
 		// check any zeds nearby
 		for _, zed := range byDistance {
 			if _, ok := zed.Unit.(*Zed); ok {
-				if soldier.CanShoot(coord, zed.coord) {
+				if soldier.CanShoot(Coord, zed.Coord) {
 					// shoot that zed
-					soldier.Shoot(coord, zed.coord, zed.Unit)
+					soldier.Shoot(Coord, zed.Coord, zed.Unit)
 					soldier.SemifireCounter = SOL_SEMIFIRE_TICKS
 					return
 				}
@@ -95,23 +95,23 @@ func (s *Squad) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
 		lx := sid % 2
 		ly := sid / 2
 		myTargetCell := s.Target.Cell().Add(lx, ly)
-		if f.field.CellAt(myTargetCell).passable {
+		if f.field.CellAt(myTargetCell).Passable {
 			soldier.MyTarget = myTargetCell.UnitCenter()
 		} else {
 			soldier.MyTarget = s.Target
 		}
-		soldier.path = f.FindPath(coord.Cell(), soldier.MyTarget.Cell())
+		soldier.path = f.FindPath(Coord.Cell(), soldier.MyTarget.Cell())
 	}
 
 	Target, ok := soldier.path.Current()
 	if ok {
-		if coord.Distance(Target.UnitCenter()) < FLOAT_ERROR {
+		if Coord.Distance(Target.UnitCenter()) < FLOAT_ERROR {
 			Target, ok = soldier.path.Next()
 			if ok {
-				u.MoveToward(coord, Target.UnitCenter())
+				u.MoveToward(Coord, Target.UnitCenter())
 			}
 		} else {
-			u.MoveToward(coord, Target.UnitCenter())
+			u.MoveToward(Coord, Target.UnitCenter())
 		}
 	}
 }
@@ -128,7 +128,7 @@ OrderLoop:
 		case order := <-s.Orders:
 			switch order.order {
 			case ORDER_MOVE:
-				s.Target = order.coord.UnitCenter()
+				s.Target = order.Coord.UnitCenter()
 				s.Automove = false
 			case ORDER_AUTOMOVE:
 				s.Automove = true
@@ -141,7 +141,7 @@ OrderLoop:
 				s.FireState = order.order
 
 			case ORDER_GREN:
-				s.GrenTo = order.coord
+				s.GrenTo = order.Coord
 			}
 		default:
 			break OrderLoop
@@ -149,10 +149,10 @@ OrderLoop:
 	}
 
 	if s.Automove {
-		coord, _ := view.UnitByID(s.Units[0].GetID())
+		Coord, _ := view.UnitByID(s.Units[0].GetID())
 		// make path to nearby zed
 		if tick%SQUAD_RETARGET_TICKS == 0 {
-			byDistance := view.UnitsByDistance(coord)
+			byDistance := view.UnitsByDistance(Coord)
 			var zed UnitPresence
 			var zedFound bool
 			for Id, u := range byDistance {
@@ -169,7 +169,7 @@ OrderLoop:
 			}
 
 			// chase toward zed
-			s.Target = zed.coord
+			s.Target = zed.Coord
 		}
 	}
 
@@ -190,7 +190,7 @@ func (z *ZedSwarm) DetachUnit(u Unit) {
 	// FIXME: implement
 }
 
-func (z *ZedSwarm) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
+func (z *ZedSwarm) HandleUnit(f *FieldView, u Unit, Coord UnitCoord) {
 	var zed *Zed
 	switch u.(type) {
 	case *Zed:
@@ -214,8 +214,8 @@ func (z *ZedSwarm) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
 	if zed.LastAttacker >= 0 {
 		// fight back
 		attackerCoord, attacker := f.UnitByID(zed.LastAttacker)
-		if zed.CanBite(coord, attackerCoord) {
-			zed.Bite(coord, attackerCoord, attacker)
+		if zed.CanBite(Coord, attackerCoord) {
+			zed.Bite(Coord, attackerCoord, attacker)
 			_, attacker = f.UnitByID(zed.LastAttacker)
 			if corpse, ok := attacker.(*Corpse); ok {
 				// foe is bitten to death
@@ -236,7 +236,7 @@ func (z *ZedSwarm) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
 		}
 	} else {
 		// find nearby human and attack it
-		byDistance := f.UnitsByDistance(coord)
+		byDistance := f.UnitsByDistance(Coord)
 		var nonzed UnitPresence
 		var nonzedFound bool
 		for Id, u := range byDistance {
@@ -255,9 +255,9 @@ func (z *ZedSwarm) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
 		}
 
 		// chase toward nonzed
-		dest := nonzed.coord
-		if zed.CanBite(coord, dest) {
-			zed.Bite(coord, dest, nonzed.Unit)
+		dest := nonzed.Coord
+		if zed.CanBite(Coord, dest) {
+			zed.Bite(Coord, dest, nonzed.Unit)
 			_, victim := f.UnitByID(nonzed.Unit.GetID())
 			if corpse, ok := victim.(*Corpse); ok {
 				// victim is bitten to death, eat it
@@ -278,24 +278,24 @@ func (z *ZedSwarm) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
 		}
 	}
 
-	if f.HaveLOS(coord, Target) {
+	if f.HaveLOS(Coord, Target) {
 		// forget about path, rush toward target
 		zed.path = nil
-		zed.MoveToward(coord, Target)
+		zed.MoveToward(Coord, Target)
 	} else if Target.Cell() != (CellCoord{0, 0}) {
 		// follow path to target or create one
 		if zed.path == nil {
-			zed.path = f.FindPath(coord.Cell(), Target.Cell())
+			zed.path = f.FindPath(Coord.Cell(), Target.Cell())
 		}
 		Target, ok := zed.path.Current()
 		if ok {
-			if coord.Distance(Target.UnitCenter()) < FLOAT_ERROR {
+			if Coord.Distance(Target.UnitCenter()) < FLOAT_ERROR {
 				Target, ok = zed.path.Next()
 				if ok {
-					u.MoveToward(coord, Target.UnitCenter())
+					u.MoveToward(Coord, Target.UnitCenter())
 				}
 			} else {
-				u.MoveToward(coord, Target.UnitCenter())
+				u.MoveToward(Coord, Target.UnitCenter())
 			}
 		} else {
 			zed.path = nil
@@ -315,41 +315,41 @@ func (d *DamselCrowd) DetachUnit(u Unit) {
 	// FIXME: implement
 }
 
-func (d *DamselCrowd) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
+func (d *DamselCrowd) HandleUnit(f *FieldView, u Unit, Coord UnitCoord) {
 	dam := u.(*Damsel)
 	if dam.LastAttacker >= 0 {
 		// flee away
 		attackerCoord, attacker := f.UnitByID(dam.LastAttacker)
-		dam.MoveAway(coord, attackerCoord)
+		dam.MoveAway(Coord, attackerCoord)
 		if _, ok := attacker.(*Corpse); ok {
 			// attacker is dead, 'calm' down
 			dam.LastAttacker = -1
 		}
 	} else if dam.Adrenaline > 0 {
 		// flee from panic point
-		dam.MoveAway(coord, dam.PanicPoint)
+		dam.MoveAway(Coord, dam.PanicPoint)
 	} else {
-		if dam.WanderTarget == coord {
+		if dam.WanderTarget == Coord {
 			// wander around
 			for i := 0; i < DAMSEL_WANDER_TRIES; i++ {
-				rx := ibound(coord.Cell().X+int(rand.Int31n(DAMSEL_WANDER_RADIUS))-
+				rx := ibound(Coord.Cell().X+int(rand.Int31n(DAMSEL_WANDER_RADIUS))-
 					DAMSEL_WANDER_RADIUS/2, 0, 1024)
-				ry := ibound(coord.Cell().Y+int(rand.Int31n(DAMSEL_WANDER_RADIUS))-
+				ry := ibound(Coord.Cell().Y+int(rand.Int31n(DAMSEL_WANDER_RADIUS))-
 					DAMSEL_WANDER_RADIUS/2, 0, 1024)
 				newCoord := CellCoord{rx, ry}.UnitCenter()
-				if f.HaveLOS(coord, newCoord) {
+				if f.HaveLOS(Coord, newCoord) {
 					dam.WanderTarget = newCoord
 				}
 			}
 		}
-		dam.MoveToward(coord, dam.WanderTarget)
+		dam.MoveToward(Coord, dam.WanderTarget)
 	}
 
 	dam.Adrenaline -= DAM_ADRENALINE_FADE
 	if dam.Adrenaline < 0 {
 		dam.Adrenaline = 0
 		if dam.PanicPoint != (UnitCoord{0, 0}) {
-			dam.WanderTarget = coord
+			dam.WanderTarget = Coord
 			dam.PanicPoint = UnitCoord{0, 0}
 		}
 	}
@@ -359,4 +359,4 @@ type NopAgent struct{}
 
 func (n NopAgent) AttachUnit(u Unit)                                {}
 func (n NopAgent) DetachUnit(u Unit)                                {}
-func (n NopAgent) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {}
+func (n NopAgent) HandleUnit(f *FieldView, u Unit, Coord UnitCoord) {}

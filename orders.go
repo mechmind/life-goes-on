@@ -11,7 +11,7 @@ const (
 
 type Order struct {
 	order int
-	coord CellCoord
+	Coord CellCoord
 }
 
 func toggleFireState(fs int) int {

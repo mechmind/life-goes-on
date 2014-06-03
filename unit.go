@@ -63,7 +63,7 @@ type Mover interface {
 }
 
 type DamageReciever interface {
-	RecieveDamage(from int, dmg float32)
+	RecieveDamage(From int, dmg float32)
 }
 
 type Walker struct {
@@ -77,7 +77,7 @@ func (w *Walker) MoveToward(f *Field, src, dest UnitCoord) (UnitCoord, bool) {
 	direction := NextCellCoord(src, toward)
 	currentCellCoord := src.Cell()
 	currentCell := f.CellAt(currentCellCoord)
-	cost := calcSlopeCost(direction, currentCell.slopes)
+	cost := calcSlopeCost(direction, currentCell.Slopes)
 
 	//log.Println("mover:", src, "->", dest, "d:", direction, "t:", toward)
 	var stuck bool
@@ -228,7 +228,7 @@ func (s *Soldier) CanShoot(src, dest UnitCoord) bool {
 	return s.Gunner.CanShoot(src, dest) && s.field.HaveLOS(src, dest)
 }
 
-func (s *Soldier) RecieveDamage(from int, dmg float32) {
+func (s *Soldier) RecieveDamage(From int, dmg float32) {
 	s.Health -= dmg
 	if s.Health < 0 {
 		s.field.KillMe(s.Id)
@@ -301,10 +301,10 @@ func (z *Zed) Bite(src, dest UnitCoord, victim Unit) {
 	victim.RecieveDamage(z.Id, z.Biter.BiteDamage)
 }
 
-func (z *Zed) RecieveDamage(from int, dmg float32) {
+func (z *Zed) RecieveDamage(From int, dmg float32) {
 	z.Health -= dmg
 	z.Rage += dmg * ZED_RAGE_FROM_DAMAGE
-	z.LastAttacker = from
+	z.LastAttacker = From
 	if z.Health < 0 {
 		z.field.KillMe(z.Id)
 	}
@@ -391,15 +391,15 @@ func (d *Damsel) HearScream(dmg float32, src UnitCoord, distance float32) {
 	d.PanicPoint = src
 }
 
-func (d *Damsel) RecieveDamage(from int, dmg float32) {
+func (d *Damsel) RecieveDamage(From int, dmg float32) {
 	d.Health -= dmg
-	d.LastAttacker = from
+	d.LastAttacker = From
 	// scream in pain
 	myCoord, _ := d.field.UnitByID(d.Id)
 	neighs := d.field.UnitsInRange(myCoord, DAM_SCREAM_RANGE)
 	for _, neigh := range neighs {
 		if neighDam, ok := neigh.Unit.(*Damsel); ok && neighDam.Id != d.Id {
-			neighDam.HearScream(dmg, myCoord, myCoord.Distance(neigh.coord))
+			neighDam.HearScream(dmg, myCoord, myCoord.Distance(neigh.Coord))
 		}
 	}
 
@@ -431,7 +431,7 @@ func (c *Corpse) MoveToward(src, dest UnitCoord) (UnitCoord, bool) {
 	return src, false
 }
 
-func (c *Corpse) RecieveDamage(from int, dmg float32) {}
+func (c *Corpse) RecieveDamage(From int, dmg float32) {}
 
 func (c *Corpse) Respawn() *Zed {
 	return NewZed(c.field)
