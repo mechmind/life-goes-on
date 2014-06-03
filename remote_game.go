@@ -13,6 +13,7 @@ type RemoteGame struct {
 	render              Render
 	Orders              chan Order
 	readErrs, writeErrs chan error
+	attachan chan Render
 	cells []Cell
 }
 
@@ -37,15 +38,18 @@ func ConnectRemoteGame(straddr string) (*RemoteGame, error) {
 	}
 
 	rg := &RemoteGame{conn: conn, readErrs: make(chan error), writeErrs: make(chan error),
-		Orders: make(chan Order)}
+		Orders: make(chan Order), attachan: make(chan Render)}
 	return rg, nil
 }
 
 func (rg *RemoteGame) AttachPlayer(r Render) {
-	rg.render = r
+	rg.attachan <- r
 }
 
 func (rg *RemoteGame) Run() {
+	// wait for attaching
+	rg.render = <-rg.attachan
+	// then interact with remote
 	go rg.runReader()
 	go rg.runWriter()
 
