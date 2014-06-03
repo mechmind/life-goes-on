@@ -14,32 +14,32 @@ var (
 )
 
 type Dispatcher struct {
-	field *Field
-	players []Player
-	rules Rules
-	lastid int
+	field       *Field
+	players     []Player
+	rules       Rules
+	lastid      int
 	playerQueue chan PlayerReq
-	time *Time
-	gameState chan GameState
+	time        *Time
+	gameState   chan GameState
 }
 
 type Player struct {
 	render Render
-	id int
+	id     int
 	orders chan Order
 }
 
 type PlayerReq struct {
-	p Player
-	op int
-	id int
+	p    Player
+	op   int
+	id   int
 	resp chan int
 }
 
 type Rules struct {
 	minPlayers int
 	maxPlayers int
-	canIdle bool
+	canIdle    bool
 }
 
 func NewDispatcher(r Rules) *Dispatcher {
@@ -140,7 +140,7 @@ func (d *Dispatcher) runGame() {
 				d.players[len(d.players)-1].render.Spectate()
 			}
 		case state := <-d.gameState:
-			if state.player >=0 {
+			if state.player >= 0 {
 				player := d.playerById(state.player)
 				if player == nil {
 					continue
@@ -151,7 +151,7 @@ func (d *Dispatcher) runGame() {
 					p.render.HandleGameState(state)
 				}
 			}
-		// TODO: abort channel
+			// TODO: abort channel
 		}
 	}
 }

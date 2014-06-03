@@ -23,14 +23,14 @@ type Thinker interface {
 }
 
 type Squad struct {
-	units     []*Soldier
-	target    UnitCoord
-	automove  bool
-	orders    chan Order
-	fireState int
-	grenTo    CellCoord
+	units       []*Soldier
+	target      UnitCoord
+	automove    bool
+	orders      chan Order
+	fireState   int
+	grenTo      CellCoord
 	grenTimeout int
-	pid int
+	pid         int
 }
 
 func (s *Squad) AttachUnit(u Unit) {
@@ -271,7 +271,7 @@ func (z *ZedSwarm) HandleUnit(f *FieldView, u Unit, coord UnitCoord) {
 					// eat it
 					zed.Eat(ZED_EAT_NUTRITION)
 				}
-			return
+				return
 			}
 		} else {
 			target = dest

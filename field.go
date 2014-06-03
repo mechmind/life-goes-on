@@ -8,7 +8,7 @@ import (
 const (
 	FLOAT_ERROR           = 0.000001
 	FIELD_BACKBUFFER_SIZE = 3
-	FIELD_SIZE = 1024
+	FIELD_SIZE            = 1024
 )
 
 const (
@@ -22,7 +22,6 @@ const (
 	PS_PASSABLE = Passability(iota)
 	PS_IMPASSABLE
 )
-
 
 var nopAgent NopAgent
 
@@ -117,7 +116,7 @@ func (f *Field) Tick(tick int64) {
 	}
 
 	// check game over
-	if tick % TIME_TICKS_PER_SEC == 0 {
+	if tick%TIME_TICKS_PER_SEC == 0 {
 		var Zs, Bs, Ss int
 		for _, u := range f.units {
 			switch u.unit.(type) {
@@ -134,14 +133,14 @@ func (f *Field) Tick(tick int64) {
 		}
 		// TODO: rebuild
 		/*
-		if Zs == 0 {
-			if Bs == 0 {
-				f.gameState <- GAME_DRAW
-			} else {
-				f.gameState <- GAME_WIN
+			if Zs == 0 {
+				if Bs == 0 {
+					f.gameState <- GAME_DRAW
+				} else {
+					f.gameState <- GAME_WIN
+				}
 			}
-		}
-		//*/
+			//*/
 	}
 
 	// send update

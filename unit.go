@@ -29,7 +29,7 @@ const (
 	SOL_GUN_DAMAGE      = 10
 	SOL_GUN_RANGE       = 45
 	SOL_ACC_DECAY_START = 10
-	SOL_MISSHOT_PROB   = 20
+	SOL_MISSHOT_PROB    = 20
 	SOL_GREN_DAMAGE     = 80
 	SOL_GREN_RANGE      = 20
 	SOL_GREN_RADIUS     = 6
@@ -247,7 +247,7 @@ func (s *Soldier) Shoot(src, dest UnitCoord, victim Unit) {
 	dist := src.Distance(newDest)
 	if dist > SOL_ACC_DECAY_START {
 		prob := (SOL_GUN_RANGE - dist) * 100 / (SOL_GUN_RANGE - SOL_ACC_DECAY_START)
-		if s.field.rng.Float32() * 100 > prob {
+		if s.field.rng.Float32()*100 > prob {
 			// miss
 			return
 		}

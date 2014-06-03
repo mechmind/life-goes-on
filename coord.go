@@ -89,7 +89,7 @@ func NextCellCoord(pos, dir UnitCoord) CellCoord {
 		switch {
 		case jointDir.X <= 0 && jointDir.Y <= 0:
 			next = next.Add(0, -1)
-		case jointDir.X <=0 && jointDir.Y > 0:
+		case jointDir.X <= 0 && jointDir.Y > 0:
 			next = next.Add(-1, 0)
 		case jointDir.X > 0 && jointDir.Y > 0:
 			next = next.Add(0, 1)
@@ -99,9 +99,9 @@ func NextCellCoord(pos, dir UnitCoord) CellCoord {
 	} else {
 		// dir vector points to the cell clockwise to joint
 		switch {
-		case jointDir.X <=0 && jointDir.Y <= 0:
+		case jointDir.X <= 0 && jointDir.Y <= 0:
 			next = next.Add(-1, 0)
-		case jointDir.X <=0 && jointDir.Y > 0:
+		case jointDir.X <= 0 && jointDir.Y > 0:
 			next = next.Add(0, 1)
 		case jointDir.X > 0 && jointDir.Y > 0:
 			next = next.Add(1, 0)

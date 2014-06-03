@@ -39,7 +39,7 @@ func (t *Time) Run() {
 }
 
 func (t *Time) Stop() {
-	t.stopCh <-struct{}{}
+	t.stopCh <- struct{}{}
 }
 
 func (t *Time) SetTicker(tr Ticker) {

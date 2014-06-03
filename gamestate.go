@@ -10,6 +10,6 @@ const (
 )
 
 type GameState struct {
-	state int
+	state  int
 	player int
 }

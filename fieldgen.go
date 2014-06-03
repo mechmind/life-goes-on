@@ -48,11 +48,11 @@ func placeSquad(field *Field, id, pid int) chan Order {
 	var sold4 = NewSoldier(field)
 
 	var cx, cy int
-	if id % 2 == 1 {
+	if id%2 == 1 {
 		cx = 100
 	}
 
-	if id / 2 == 1 {
+	if id/2 == 1 {
 		cy = 100
 	}
 

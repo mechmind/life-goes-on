@@ -50,7 +50,7 @@ const (
 	TUI_PATHFIND_PATH_BG   = termbox.ColorRed
 
 	TUI_CURSOR_MARGIN = 5
-	
+
 	// status
 	TUI_STATUS_FIRE_FG = termbox.ColorRed
 )
@@ -70,27 +70,27 @@ type Render interface {
 	HandleGameState(GameState)
 	AssignSquad(int, chan Order)
 	Spectate()
-	Run()
+	Reset()
 }
 
-type assignment struct {
-	id int
+type Assignment struct {
+	id     int
 	orders chan Order
 }
 
 type LocalRender struct {
-	updates chan *Field
-	orders chan Order
-	squad int
+	updates      chan *Field
+	orders       chan Order
+	squad        int
 	stateUpdates chan GameState
-	assignments chan assignment
+	assignments  chan Assignment
 
 	events chan termbox.Event
 }
 
 func NewLocalRender() *LocalRender {
 	return &LocalRender{updates: make(chan *Field, 3), stateUpdates: make(chan GameState, 3),
-		squad: -1, assignments: make(chan assignment, 1), events: make(chan termbox.Event)}
+		squad: -1, assignments: make(chan Assignment, 1), events: make(chan termbox.Event)}
 }
 
 func (lr *LocalRender) HandleUpdate(f *Field) {
@@ -108,12 +108,14 @@ func (lr *LocalRender) HandleGameState(s GameState) {
 }
 
 func (lr *LocalRender) AssignSquad(id int, orders chan Order) {
-	lr.assignments <- assignment{id, orders}
+	lr.assignments <- Assignment{id, orders}
 }
 
 func (lr *LocalRender) Spectate() {
-	lr.assignments <- assignment{-1, nil}
+	lr.assignments <- Assignment{-1, nil}
 }
+
+func (lr *LocalRender) Reset() {}
 
 func (lr *LocalRender) Init() {
 	go pollEvents(lr.events)
@@ -144,9 +146,9 @@ func (lr *LocalRender) Run() {
 	for {
 		select {
 		case gameState = <-lr.stateUpdates:
-		case assignment := <-lr.assignments:
-			lr.squad = assignment.id
-			lr.orders = assignment.orders
+		case Assignment := <-lr.assignments:
+			lr.squad = Assignment.id
+			lr.orders = Assignment.orders
 			log.Println("rdr: assigned to squad", lr.squad, "orders?", lr.orders == nil)
 		case field = <-lr.updates:
 
@@ -403,7 +405,7 @@ func drawField(f *Field, pos CellCoord, sv squadView, gameState GameState) {
 		fireState = fmt.Sprintf(fireState, "NO_FIRE")
 	}
 
-	yPos := tb2cell().Y-1
+	yPos := tb2cell().Y - 1
 	statusPos = writeTermString(fireState, TUI_STATUS_FIRE_FG, TUI_DEFAULT_BG,
 		statusPos, yPos)
 
@@ -475,7 +477,7 @@ func writeBanner(str string) {
 
 	size := tb2cell()
 	xs := (size.X - totalLen) / 2
-	ys := size.Y/2 -1
+	ys := size.Y/2 - 1
 
 	msg := fmt.Sprintf("* %s *", str)
 	line := strings.Repeat("*", totalLen)
@@ -520,7 +522,6 @@ func sendOrder(orders chan Order, o Order) {
 	default:
 	}
 }
-
 
 type squadView struct {
 	fireState int
