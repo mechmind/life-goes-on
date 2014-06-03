@@ -104,10 +104,15 @@ func (d *Dispatcher) Run() {
 		// wait for desired amount of players to join
 		// TODO: allow abort
 		for {
-			req := <-d.playerQueue
-			d.handlePlayerReq(req)
 			if d.countPlayers() >= d.rules.minPlayers {
 				break
+			}
+			req := <-d.playerQueue
+			d.handlePlayerReq(req)
+			if req.op == DISP_ATTACH {
+				newPlayer := d.players[len(d.players)-1]
+				newPlayer.render.Spectate()
+				newPlayer.render.HandleUpdate(d.field)
 			}
 		}
 		// run game

@@ -141,6 +141,7 @@ func (lr *LocalRender) Run() {
 
 	var gameState = GameState{State: GAME_WAIT}
 
+	lr.drawField(field, currentPos, sv, gameState)
 	for {
 		select {
 		case gameState = <-lr.stateUpdates:
