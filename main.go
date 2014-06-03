@@ -49,7 +49,8 @@ func main() {
 		// create dispatcher
 		rules := singlePlayerRules
 		if *listen != "" {
-			rules = duelRules
+			//rules = duelRules
+			rules = singlePlayerRules
 		}
 
 		dispatcher := NewDispatcher(rules)

@@ -12,6 +12,7 @@ const (
 var (
 	singlePlayerRules = Rules{minPlayers: 1, maxPlayers: 1}
 	duelRules         = Rules{minPlayers: 2, maxPlayers: 2}
+	coopRules         = Rules{minPlayers: 1, maxPlayers: 2}
 )
 
 type Dispatcher struct {
@@ -106,7 +107,6 @@ func (d *Dispatcher) Run() {
 			req := <-d.playerQueue
 			d.handlePlayerReq(req)
 			if d.countPlayers() >= d.rules.minPlayers {
-				log.Println("dp: enough players")
 				break
 			}
 		}
@@ -119,8 +119,12 @@ func (d *Dispatcher) Run() {
 func (d *Dispatcher) runGame() {
 	// bind players to squads
 	for idx, Player := range d.players {
-		Player.Orders = placeSquad(d.field, idx, Player.Id)
-		Player.render.AssignSquad(Player.Id, Player.Orders)
+		if idx < d.rules.maxPlayers {
+			Player.Orders = placeSquad(d.field, idx, Player.Id)
+			Player.render.AssignSquad(Player.Id, Player.Orders)
+		} else {
+			Player.render.Spectate()
+		}
 	}
 
 	populateField(d.field)

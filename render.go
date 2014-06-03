@@ -53,6 +53,7 @@ const (
 
 	// status
 	TUI_STATUS_FIRE_FG = termbox.ColorRed
+	TUI_STATUS_INFO_FG = termbox.ColorWhite | termbox.AttrBold
 )
 
 var boomingColors = [SOL_GREN_TICK_CAP + 1]struct {
@@ -131,9 +132,6 @@ func (lr *LocalRender) Run() {
 	defer termbox.Close()
 
 	var currentPos CellCoord
-	var size = tb2cell()
-	var cursorPos = CellCoord{size.X / 2, size.Y / 2} // center cursor
-	//termbox.SetCursor(cursorPos.X, cursorPos.Y)
 
 	// FIXME: hardcoded squad values
 	var sv = squadView{FireState: ORDER_FIRE}
@@ -149,7 +147,7 @@ func (lr *LocalRender) Run() {
 		case Assignment := <-lr.assignments:
 			lr.squad = Assignment.Id
 			lr.Orders = Assignment.Orders
-			log.Println("rdr: assigned to squad", lr.squad, "orders?", lr.Orders == nil)
+			log.Println("rdr: assigned to squad", lr.squad, "; orders?", lr.Orders == nil)
 		case field = <-lr.updates:
 
 			// update rendering state
@@ -160,129 +158,79 @@ func (lr *LocalRender) Run() {
 					break
 				}
 			}
-			drawField(field, currentPos, sv, gameState)
+			lr.drawField(field, currentPos, sv, gameState)
 		case ev := <-lr.events:
 			switch ev.Type {
 			case termbox.EventMouse:
-				cursorPos = currentPos.Add(ev.MouseX, ev.MouseY)
-				//termbox.SetCursor(ev.MouseX, ev.MouseY)
+				cursorPos := currentPos.Add(ev.MouseX, ev.MouseY)
 				switch {
 				case ev.Key == termbox.MouseLeft:
-					if (CheckCellCoordBounds(cursorPos, CellCoord{0, 0}, CellCoord{1024, 1024}) &&
+					if (lr.squad >=0 &&
+						CheckCellCoordBounds(cursorPos, CellCoord{0, 0}, CellCoord{1024, 1024}) &&
 						field.CellAt(cursorPos).Passable) {
 						sendOrder(lr.Orders, Order{ORDER_MOVE, cursorPos})
 						sv.movingTo = cursorPos
 					}
 				case ev.Key == termbox.MouseRight:
-					sendOrder(lr.Orders, Order{ORDER_GREN, cursorPos})
-					sv.GrenTo = cursorPos
+					if lr.squad >=0 {
+						sendOrder(lr.Orders, Order{ORDER_GREN, cursorPos})
+						sv.GrenTo = cursorPos
+					}
 				}
 
 			case termbox.EventKey:
 				switch {
-				// move view left
-				case ev.Ch == 'h':
-					cursorPos = cursorPos.Add(-1, 0)
-
-				// move view right
-				case ev.Ch == 'l':
-					cursorPos = cursorPos.Add(1, 0)
-
-				// move view up
-				case ev.Ch == 'j':
-					cursorPos = cursorPos.Add(0, 1)
-
-				// move view down
-				case ev.Ch == 'k':
-					cursorPos = cursorPos.Add(0, -1)
-
 				// direct moving window
 				case ev.Key == termbox.KeyArrowLeft:
 					fallthrough
 				case ev.Ch == 'a':
-					cursorPos = cursorPos.Add(-TUI_POS_STEP, 0)
 					currentPos = currentPos.Add(-TUI_POS_STEP, 0)
 
 				case ev.Key == termbox.KeyArrowRight:
 					fallthrough
 				case ev.Ch == 'd':
-					cursorPos = cursorPos.Add(TUI_POS_STEP, 0)
 					currentPos = currentPos.Add(TUI_POS_STEP, 0)
 
 				case ev.Key == termbox.KeyArrowDown:
 					fallthrough
 				case ev.Ch == 's':
-					cursorPos = cursorPos.Add(0, TUI_POS_STEP)
 					currentPos = currentPos.Add(0, TUI_POS_STEP)
 
 				case ev.Key == termbox.KeyArrowUp:
 					fallthrough
 				case ev.Ch == 'w':
-					cursorPos = cursorPos.Add(0, -TUI_POS_STEP)
 					currentPos = currentPos.Add(0, -TUI_POS_STEP)
-
-				// big leaps
-				// move view left
-				case ev.Ch == 'H':
-					cursorPos = cursorPos.Add(-TUI_POS_STEP, 0)
-
-				// move view right
-				case ev.Ch == 'L':
-					cursorPos = cursorPos.Add(TUI_POS_STEP, 0)
-
-				// move view up
-				case ev.Ch == 'J':
-					cursorPos = cursorPos.Add(0, TUI_POS_STEP)
-
-				// move view down
-				case ev.Ch == 'K':
-					cursorPos = cursorPos.Add(0, -TUI_POS_STEP)
-
-				// orders
-				case ev.Key == termbox.KeySpace:
-					sendOrder(lr.Orders, Order{ORDER_MOVE, cursorPos})
-					sv.movingTo = cursorPos
-					sv.Automove = false
-
-				case ev.Ch == 'g':
-					fallthrough
-				case ev.Ch == 'G':
-					sendOrder(lr.Orders, Order{ORDER_GREN, cursorPos})
-					sv.GrenTo = cursorPos
 
 				case ev.Ch == 'f':
 					fallthrough
 				case ev.Ch == 'F':
-					sv.FireState = toggleFireState(sv.FireState)
-					sendOrder(lr.Orders, Order{sv.FireState, cursorPos})
+					if lr.squad >=0 {
+						sv.FireState = toggleFireState(sv.FireState)
+						sendOrder(lr.Orders, Order{sv.FireState, CellCoord{0, 0}})
+					}
 
 				case ev.Ch == 'p':
 					fallthrough
 				case ev.Ch == 'P':
-					sendOrder(lr.Orders, Order{ORDER_AUTOMOVE, cursorPos})
-					sv.Automove = true
+					if lr.squad >= 0 {
+						sendOrder(lr.Orders, Order{ORDER_AUTOMOVE, CellCoord{0, 0}})
+						sv.Automove = true
+					}
 
 				// quit
 				case ev.Key == termbox.KeyF10:
 					return
 				}
-				currentPos = handleCursorMove(size, currentPos, cursorPos)
-				//relativeCursorPos := cursorPos.AddCoord(currentPos.Mult(-1))
-				//termbox.SetCursor(relativeCursorPos.X, relativeCursorPos.Y)
-				drawField(field, currentPos, sv, gameState)
+				lr.drawField(field, currentPos, sv, gameState)
 			case termbox.EventResize:
-				size = tb2cell()
-				currentPos = handleCursorMove(size, currentPos, cursorPos)
-				//relativeCursorPos := cursorPos.AddCoord(currentPos.Mult(-1))
-				//termbox.SetCursor(relativeCursorPos.X, relativeCursorPos.Y)
-				drawField(field, currentPos, sv, gameState)
+				lr.drawField(field, currentPos, sv, gameState)
 			}
 		}
 	}
 }
 
 // render field chunk that we currently looking at
-func drawField(f *Field, pos CellCoord, sv squadView, gameState GameState) {
+func (lr *LocalRender) drawField(f *Field, pos CellCoord, sv squadView, gameState GameState) {
 	// 2 lines are reserved for messages and status bars
 	upperBound := tb2cell().Add(-1, -1).AddCoord(pos)
 
@@ -395,19 +343,25 @@ func drawField(f *Field, pos CellCoord, sv squadView, gameState GameState) {
 
 	// render status and message bars
 	var statusPos int
-	var FireState = "[ %s ]"
-	switch sv.FireState {
-	case ORDER_FIRE:
-		FireState = fmt.Sprintf(FireState, "STAY_FIRE")
-	case ORDER_SEMIFIRE:
-		FireState = fmt.Sprintf(FireState, "RUN_FIRE")
-	case ORDER_NOFIRE:
-		FireState = fmt.Sprintf(FireState, "NO_FIRE")
+	yPos := tb2cell().Y - 1
+	if lr.squad >= 0 {
+		var FireState = "[ %s ]"
+		switch sv.FireState {
+		case ORDER_FIRE:
+			FireState = fmt.Sprintf(FireState, "STAY_FIRE")
+		case ORDER_SEMIFIRE:
+			FireState = fmt.Sprintf(FireState, "RUN_FIRE")
+		case ORDER_NOFIRE:
+			FireState = fmt.Sprintf(FireState, "NO_FIRE")
+		}
+		statusPos = writeTermString(FireState, TUI_STATUS_FIRE_FG, TUI_DEFAULT_BG,
+			statusPos, yPos)
+	} else {
+		// spectator mode
+		statusPos = writeTermString("[spectator] ", TUI_STATUS_INFO_FG, TUI_DEFAULT_BG,
+			statusPos, yPos)
 	}
 
-	yPos := tb2cell().Y - 1
-	statusPos = writeTermString(FireState, TUI_STATUS_FIRE_FG, TUI_DEFAULT_BG,
-		statusPos, yPos)
 
 	// count Zs and Bs and show that count in status
 	var Zs, Bs int
