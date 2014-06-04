@@ -27,7 +27,7 @@ func populateField(field *Field) {
 	for idx := 0; idx < TOTAL_DAMSELS; idx++ {
 		var Coord UnitCoord
 		for {
-			Coord = UnitCoord{field.rng.Float32()*100 + 1, field.rng.Float32()*100 + 1}
+			Coord = UnitCoord{field.rng.Float32()*150 + 1, field.rng.Float32()*150 + 1}
 			if field.CellAt(Coord.Cell()).Passable {
 				break
 			}
@@ -49,11 +49,11 @@ func placeSquad(field *Field, Id, Pid int) chan Order {
 
 	var cx, cy int
 	if Id%2 == 1 {
-		cx = 100
+		cx = 150
 	}
 
 	if Id/2 == 1 {
-		cy = 100
+		cy = 150
 	}
 
 	field.PlaceAgent(squad)

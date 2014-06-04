@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	TOTAL_DAMSELS = 200
+	TOTAL_DAMSELS = 300
 )
 
 var listen = flag.String("listen", "", "start server on given address")
