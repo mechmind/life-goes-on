@@ -59,6 +59,7 @@ func (s *Server) serveConn(conn *net.TCPConn) {
 
 	render := CreateRemoteRender(conn)
 	pid := s.dispatcher.AttachPlayer(render)
+	log.Printf("server: connection from '%s' now bound to user %d", conn.RemoteAddr(), pid)
 	err = render.Run()
 	if err != nil {
 		log.Println("server: remote render error:", err)

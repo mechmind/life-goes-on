@@ -76,7 +76,7 @@ func (d *Dispatcher) handlePlayerReq(r PlayerReq) {
 		d.players[len(d.players)-1].Id = Pid
 		r.resp <- Pid
 		d.sendAll(MESSAGE_LEVEL_INFO, "player joined the match")
-		log.Printf("dispatcher: attached new player with id", Pid)
+		log.Println("dispatcher: attached new player with id", Pid)
 	case DISP_DETACH:
 		defer func() { r.resp <- 0 }()
 		for idx, p := range d.players {
@@ -159,7 +159,7 @@ func (d *Dispatcher) runGame() {
 	for idx, Player := range d.players {
 		Player.render.HandleGameState(GameState{GAME_RUNNING, -1})
 		if idx < d.rules.maxPlayers {
-			log.Printf("dispatcher: player %d now controlling squad", Player.Id)
+			log.Printf("dispatcher: player %d now control squad", Player.Id)
 			Player.Orders = placeSquad(d.field, idx, Player.Id)
 			Player.render.AssignSquad(Player.Id, Player.Orders)
 			d.players[idx].Orders = Player.Orders
@@ -181,6 +181,7 @@ func (d *Dispatcher) runGame() {
 	d.sendAll(MESSAGE_LEVEL_INFO, "let the apocalypse begin!")
 	var countdownMsg = "new round in "
 	var countdown = GAMEOVER_COUNTDOWN
+	log.Println("dispatcher: entering game")
 	for {
 		select {
 		case field := <-d.field.updates:
@@ -203,6 +204,13 @@ func (d *Dispatcher) runGame() {
 					continue
 				}
 				Player.render.HandleGameState(State)
+				switch {
+				case State.State & GAME_LOSE > 0:
+					d.sendAll(MESSAGE_LEVEL_INFO,
+						fmt.Sprintf("player %d have been exterminated", State.Player))
+				case State.State & GAME_WIN > 0:
+					d.sendAll(MESSAGE_LEVEL_INFO, fmt.Sprintf("player %d have won!", State.Player))
+				}
 			} else {
 				for _, p := range d.players {
 					p.render.HandleGameState(State)

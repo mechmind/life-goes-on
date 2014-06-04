@@ -186,6 +186,7 @@ func (lr *LocalRender) Run() {
 	for {
 		select {
 		case msg = <-lr.messages:
+			lr.drawField(field, currentPos, sv, gameState, msg)
 		case newGameState := <-lr.stateUpdates:
 			if newGameState.State == GAME_OVER {
 				gameState.State |= newGameState.State
