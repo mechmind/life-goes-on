@@ -29,11 +29,13 @@ func CreateServer(dispatcher *Dispatcher, straddr string) (*Server, error) {
 }
 
 func (s *Server) Serve() {
+	log.Println("server: accepting connections")
 	for {
 		conn, err := s.listener.AcceptTCP()
 		if err != nil {
 			log.Println("server: failed to accept connection:", err)
 		} else {
+			log.Printf("server: new connection from '%s'", conn.RemoteAddr())
 			go s.serveConn(conn)
 		}
 	}
@@ -46,12 +48,12 @@ func (s *Server) serveConn(conn *net.TCPConn) {
 	var header [4]byte
 	_, err := conn.Read(header[:])
 	if err != nil {
-		log.Println("conn: handshake failed", err)
+		log.Println("server: handshake failed", err)
 		return
 	}
 
 	if header != ([4]byte{'L', 'G', 'O', PROTO_VERSION}) {
-		log.Println("conn: invalid header")
+		log.Println("server: invalid header")
 		return
 	}
 
@@ -59,8 +61,9 @@ func (s *Server) serveConn(conn *net.TCPConn) {
 	pid := s.dispatcher.AttachPlayer(render)
 	err = render.Run()
 	if err != nil {
-		log.Println("conn: remote render error:", err)
+		log.Println("server: remote render error:", err)
 	}
 
-	s.dispatcher.DetachPlayer(pid) // FIXME: real pid
+	s.dispatcher.DetachPlayer(pid)
+	log.Printf("server: connection from '%s' have ended", conn.RemoteAddr())
 }

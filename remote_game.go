@@ -49,7 +49,9 @@ func (rg *RemoteGame) AttachPlayer(r Render) int {
 
 func (rg *RemoteGame) Run() {
 	// wait for attaching
+	log.Println("Rgame: waiting for render...")
 	rg.render = <-rg.attachan
+	log.Println("Rgame: render attached, starting chat with server")
 	// then interact with remote
 	go rg.runReader()
 	go rg.runWriter()
@@ -57,10 +59,11 @@ func (rg *RemoteGame) Run() {
 	defer rg.conn.Close()
 	select {
 	case err := <-rg.readErrs:
-		log.Println("conn: read failed:", err)
+		log.Println("Rgame: failed to recieve message from server:", err)
 	case err := <-rg.writeErrs:
-		log.Println("conn: write failed:", err)
+		log.Println("Rgame: failed to send message to server:", err)
 	}
+	log.Println("Rgame: error occured, giving up")
 	rg.render.HandleMessage(MESSAGE_LEVEL_INFO, "connection to server have been terminated")
 }
 
@@ -84,12 +87,10 @@ func (rg *RemoteGame) runReader() {
 		case ub.Assignment != nil:
 			// is an assignment
 			ass := *ub.Assignment
-			log.Println("rg: got assignment")
 			rg.render.AssignSquad(ass.Id, rg.Orders)
 		case ub.GameState != nil:
 			// is an game state
 			State := *ub.GameState
-			log.Println("rg: got state", State.Player, State.State)
 			rg.render.HandleGameState(State)
 		case ub.Message != nil:
 			msg := ub.Message

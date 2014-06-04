@@ -26,6 +26,6 @@ type UpdateBulk struct {
 	Field      *Field
 	Assignment *Assignment
 	GameState  *GameState
-	Reset bool
-	Message *Message
+	Reset      bool
+	Message    *Message
 }

@@ -69,6 +69,7 @@ func (rr *RemoteRender) Reset() {
 }
 
 func (rr *RemoteRender) Run() error {
+	log.Println("Rrender: starting up")
 	go rr.runReader()
 	go rr.runWriter()
 	for {
@@ -123,7 +124,6 @@ func (rr *RemoteRender) runWriter() {
 	for {
 		select {
 		case Assignment := <-rr.assignments:
-			log.Println("rr: sending assign")
 			err := encoder.Encode(UpdateBulk{Assignment: &Assignment})
 			if err != nil {
 				rr.writeErrs <- err
@@ -131,15 +131,12 @@ func (rr *RemoteRender) runWriter() {
 			}
 			rr.Orders = Assignment.Orders
 		case field := <-rr.localUpdates:
-			//log.Println("rr: sending field", len(field.Cells))
 			err := encoder.Encode(UpdateBulk{Field: field})
-			//log.Println("rr: sent field")
 			if err != nil {
 				rr.writeErrs <- err
 				return
 			}
 		case State := <-rr.localStateUpdates:
-			log.Println("rr: sending state")
 			err := encoder.Encode(UpdateBulk{GameState: &State})
 			if err != nil {
 				rr.writeErrs <- err

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/nsf/termbox-go"
+	"log"
 	"strings"
 )
 
@@ -10,8 +11,8 @@ const (
 	TUI_DEFAULT_BG = termbox.ColorBlack
 	TUI_DEFAULT_FG = termbox.ColorWhite
 
-	TUI_SOLDIER_CHAR = '@'
-	TUI_SOLDIER_FG   = termbox.ColorRed | termbox.AttrBold
+	TUI_SOLDIER_CHAR       = '@'
+	TUI_SOLDIER_FG         = termbox.ColorRed | termbox.AttrBold
 	TUI_ANOTHER_SOLDIER_FG = termbox.ColorMagenta | termbox.AttrBold
 
 	TUI_DAMSEL_CHAR = 'B'
@@ -54,11 +55,10 @@ const (
 	// status
 	TUI_STATUS_FIRE_FG = termbox.ColorRed
 	TUI_STATUS_INFO_FG = termbox.ColorWhite | termbox.AttrBold
-	
+
 	MESSAGE_LEVEL_INFO = 1
 	MESSAGE_TTL        = 50
 )
-
 
 var boomingColors = [SOL_GREN_TICK_CAP + 1]struct {
 	fg, bg termbox.Attribute
@@ -84,10 +84,22 @@ type Assignment struct {
 	Orders chan Order
 }
 
+func (a Assignment) String() string {
+	if a.Id >= 0 {
+		if a.Orders != nil {
+			return fmt.Sprintf("assgn{#%d with orders}", a.Id)
+		} else {
+			return fmt.Sprintf("assgn{#%d without orders}", a.Id)
+		}
+	} else {
+		return fmt.Sprintf("assgn{spectator}")
+	}
+}
+
 type Message struct {
-	Level int
+	Level   int
 	Content string
-	ttl int
+	ttl     int
 }
 
 type LocalRender struct {
@@ -99,7 +111,7 @@ type LocalRender struct {
 	assignments  chan Assignment
 
 	events chan termbox.Event
-	reset chan struct{}
+	reset  chan struct{}
 }
 
 func NewLocalRender() *LocalRender {
@@ -124,7 +136,7 @@ func (lr *LocalRender) HandleGameState(s GameState) {
 
 func (lr *LocalRender) HandleMessage(lvl int, msg string) {
 	select {
-	case lr.messages <-Message{lvl, msg, MESSAGE_TTL}:
+	case lr.messages <- Message{lvl, msg, MESSAGE_TTL}:
 	default:
 	}
 }
@@ -154,6 +166,8 @@ func (lr *LocalRender) Init() {
 func (lr *LocalRender) Run() {
 	defer termbox.Close()
 
+	log.Println("render: starting up")
+
 	var currentPos CellCoord
 	var doSquadFocus bool
 
@@ -161,12 +175,14 @@ func (lr *LocalRender) Run() {
 	var sv = squadView{FireState: ORDER_FIRE}
 
 	// recieve field view first
+	log.Println("render: recieving very first field update")
 	var field = <-lr.updates
 
 	var gameState = GameState{State: GAME_WAIT}
 	var msg Message
 
 	lr.drawField(field, currentPos, sv, gameState, msg)
+	log.Println("render: starting main loop")
 	for {
 		select {
 		case msg = <-lr.messages:
@@ -176,12 +192,15 @@ func (lr *LocalRender) Run() {
 			} else {
 				gameState = newGameState
 			}
+			log.Println("render: game state changed to", gameState)
 		case Assignment := <-lr.assignments:
 			lr.squad = Assignment.Id
 			lr.Orders = Assignment.Orders
 			doSquadFocus = true
+			log.Println("render: got new assignment:", Assignment)
 		case <-lr.reset:
 			sv = squadView{FireState: ORDER_FIRE}
+			log.Println("render: resetting state")
 		case field = <-lr.updates:
 
 			// update rendering state
@@ -215,14 +234,14 @@ func (lr *LocalRender) Run() {
 				cursorPos := currentPos.Add(ev.MouseX, ev.MouseY)
 				switch {
 				case ev.Key == termbox.MouseLeft:
-					if (lr.squad >=0 &&
+					if (lr.squad >= 0 &&
 						CheckCellCoordBounds(cursorPos, CellCoord{0, 0}, CellCoord{1024, 1024}) &&
 						field.CellAt(cursorPos).Passable) {
 						sendOrder(lr.Orders, Order{ORDER_MOVE, cursorPos})
 						sv.movingTo = cursorPos
 					}
 				case ev.Key == termbox.MouseRight:
-					if lr.squad >=0 {
+					if lr.squad >= 0 {
 						sendOrder(lr.Orders, Order{ORDER_GREN, cursorPos})
 						sv.GrenTo = cursorPos
 					}
@@ -254,7 +273,7 @@ func (lr *LocalRender) Run() {
 				case ev.Ch == 'f':
 					fallthrough
 				case ev.Ch == 'F':
-					if lr.squad >=0 {
+					if lr.squad >= 0 {
 						sv.FireState = toggleFireState(sv.FireState)
 						sendOrder(lr.Orders, Order{sv.FireState, CellCoord{0, 0}})
 					}
@@ -441,14 +460,14 @@ func (lr *LocalRender) drawField(f *Field, pos CellCoord, sv squadView, gameStat
 	// render gameover block if nesessary
 	var banner string
 	switch {
-	case gameState.State & GAME_WIN > 0:
+	case gameState.State&GAME_WIN > 0:
 		banner = "YOU WIN"
-	case gameState.State & GAME_LOSE > 0:
+	case gameState.State&GAME_LOSE > 0:
 		banner = "YOU LOSE"
-	case gameState.State & GAME_DRAW > 0:
+	case gameState.State&GAME_DRAW > 0:
 		banner = "DRAW"
 	}
-	if gameState.State & GAME_OVER > 0 {
+	if gameState.State&GAME_OVER > 0 {
 		if banner == "" {
 			banner = "GAME OVER"
 		} else {

@@ -37,8 +37,10 @@ func main() {
 	var attachTo interface {
 		AttachPlayer(Render) int
 	}
+
 	if *connect != "" {
 		// connect to remote game
+		log.Printf("main: connecting to remote game at '%s'", *connect)
 		remote, err := ConnectRemoteGame(*connect)
 		if err != nil {
 			log.Fatal(err)
@@ -55,11 +57,13 @@ func main() {
 			//rules = singlePlayerRules
 		}
 
+		log.Println("main: starting dispatcher")
 		dispatcher := NewDispatcher(rules)
 		go dispatcher.Run()
 		attachTo = dispatcher
 
 		if *listen != "" {
+			log.Printf("main: starting server at '%s'", *listen)
 			server, err := CreateServer(dispatcher, *listen)
 			if err != nil {
 				log.Fatal(err)
@@ -75,12 +79,15 @@ func main() {
 		}
 	} else {
 		// create local render
+		log.Println("main: creating local render")
 		render := NewLocalRender()
 		render.Init()
 
+		log.Println("main: attaching to game")
 		// attach render (as player)
 		attachTo.AttachPlayer(render)
 
+		log.Println("main: ready to play!")
 		// run render
 		render.Run()
 	}

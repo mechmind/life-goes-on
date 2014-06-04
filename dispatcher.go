@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"time"
 )
 
@@ -75,21 +76,25 @@ func (d *Dispatcher) handlePlayerReq(r PlayerReq) {
 		d.players[len(d.players)-1].Id = Pid
 		r.resp <- Pid
 		d.sendAll(MESSAGE_LEVEL_INFO, "player joined the match")
+		log.Printf("dispatcher: attached new player with id", Pid)
 	case DISP_DETACH:
+		defer func() { r.resp <- 0 }()
 		for idx, p := range d.players {
 			if p.Id == r.Id {
 				if p.Orders != nil {
 					// kill squad
-					p.Orders <-Order{ORDER_SUICIDE, CellCoord{}}
+					p.Orders <- Order{ORDER_SUICIDE, CellCoord{}}
 				}
 				copy(d.players[:idx], d.players[idx+1:])
 				d.players = d.players[:len(d.players)-1]
 				d.sendAll(MESSAGE_LEVEL_INFO, "player left the match")
-				break
+				log.Printf("dispatcher: detached player with id", p.Id)
+				return
 			}
 		}
-		r.resp <- 0
+		log.Printf("dispatcher: cannot detach player: no player with id", r.Id)
 	}
+	log.Println("dispatcher: total players now:", d.countPlayers())
 }
 
 func (d *Dispatcher) countPlayers() int {
@@ -106,12 +111,15 @@ func (d *Dispatcher) playerById(Id int) *Player {
 }
 
 func (d *Dispatcher) Run() {
+	log.Println("dispatcher: starting up")
 	for {
+		log.Println("dispatcher: starting new round, generating field")
 		// generate field
 		d.field = generateField()
 		d.gameState = d.field.gameState
 
 		// reset state of existing players
+		log.Println("dispatcher: resetting state for all connected players")
 		for _, p := range d.players {
 			p.render.Reset()
 			p.render.Spectate()
@@ -120,19 +128,23 @@ func (d *Dispatcher) Run() {
 		}
 
 		// wait for desired amount of players to join
+		log.Println("dispatcher: waiting for players")
 		for {
 			if d.countPlayers() >= d.rules.minPlayers {
 				break
 			}
 			d.sendAll(MESSAGE_LEVEL_INFO,
 				fmt.Sprintf("waiting for %d players to join...",
-					d.rules.minPlayers - d.countPlayers()))
+					d.rules.minPlayers-d.countPlayers()))
 			req := <-d.playerQueue
 			d.handlePlayerReq(req)
 			if req.op == DISP_ATTACH {
 				newPlayer := d.players[len(d.players)-1]
+				log.Println("dispatcher: new player in wait stage, set it up")
 				newPlayer.render.Spectate()
 				newPlayer.render.HandleUpdate(d.field)
+			} else {
+				log.Println("dispatcher: player %d detached in wait stage", req.Id)
 			}
 		}
 		// run game
@@ -143,17 +155,21 @@ func (d *Dispatcher) Run() {
 
 func (d *Dispatcher) runGame() {
 	// bind players to squads
+	log.Println("dispatcher: starting game")
 	for idx, Player := range d.players {
 		Player.render.HandleGameState(GameState{GAME_RUNNING, -1})
 		if idx < d.rules.maxPlayers {
+			log.Printf("dispatcher: player %d now controlling squad", Player.Id)
 			Player.Orders = placeSquad(d.field, idx, Player.Id)
 			Player.render.AssignSquad(Player.Id, Player.Orders)
 			d.players[idx].Orders = Player.Orders
 		} else {
+			log.Printf("dispatcher: player %d spectating", Player.Id)
 			Player.render.Spectate()
 		}
 	}
 
+	log.Println("dispatcher: populating field")
 	populateField(d.field)
 
 	// start game timer
@@ -175,7 +191,10 @@ func (d *Dispatcher) runGame() {
 		case pr := <-d.playerQueue:
 			d.handlePlayerReq(pr)
 			if pr.op == DISP_ATTACH {
+				log.Println("dispatcher: new player in middle of round, spectate")
 				d.players[len(d.players)-1].render.Spectate()
+			} else {
+				log.Printf("dispatcher: player %d have quit in middle of round", pr.Id)
 			}
 		case State := <-d.gameState:
 			if State.Player >= 0 {
@@ -192,6 +211,7 @@ func (d *Dispatcher) runGame() {
 
 			if State.State == GAME_OVER {
 				// game is over
+				log.Println("dispatcher: game is over")
 				countdownTicker = time.Tick(time.Second)
 			}
 		case <-countdownTicker:

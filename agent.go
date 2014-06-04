@@ -145,7 +145,7 @@ OrderLoop:
 
 			case ORDER_SUICIDE:
 				// :(
-				for i := len(s.Units) -1; i >= 0; i-- {
+				for i := len(s.Units) - 1; i >= 0; i-- {
 					s.Units[i].RecieveDamage(-1, 1000)
 				}
 				view.field.RemoveAgent(s)

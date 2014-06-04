@@ -48,7 +48,7 @@ type Field struct {
 
 	// game state
 	gameState chan GameState
-	gameOver bool
+	gameOver  bool
 }
 
 func NewField(XSize, YSize int, updates chan *Field) *Field {
@@ -118,7 +118,7 @@ func (f *Field) Tick(tick int64) {
 	}
 
 	// check game over
-	if tick%TIME_TICKS_PER_SEC == 0 && ! f.gameOver {
+	if tick%TIME_TICKS_PER_SEC == 0 && !f.gameOver {
 		f.checkGameOver()
 	}
 
