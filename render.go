@@ -12,6 +12,7 @@ const (
 
 	TUI_SOLDIER_CHAR = '@'
 	TUI_SOLDIER_FG   = termbox.ColorRed | termbox.AttrBold
+	TUI_ANOTHER_SOLDIER_FG = termbox.ColorMagenta | termbox.AttrBold
 
 	TUI_DAMSEL_CHAR = 'B'
 	TUI_DAMSEL_FG   = termbox.ColorYellow
@@ -316,7 +317,7 @@ func (lr *LocalRender) drawField(f *Field, pos CellCoord, sv squadView, gameStat
 			// unit is not visible
 			continue
 		}
-		ch, fg, bg := getUnitView(up.Unit)
+		ch, fg, bg := getUnitView(f, lr.squad, up.Unit)
 		screenPos := unitCell.AddCoord(pos.Mult(-1))
 
 		termbox.SetCell(screenPos.X, screenPos.Y, ch, fg, bg)
@@ -460,10 +461,19 @@ func (lr *LocalRender) drawField(f *Field, pos CellCoord, sv squadView, gameStat
 	termbox.Flush()
 }
 
-func getUnitView(u Unit) (ch rune, fg, bg termbox.Attribute) {
+func getUnitView(f *Field, pid int, u Unit) (ch rune, fg, bg termbox.Attribute) {
 	switch u.(type) {
 	case *Soldier:
-		return TUI_SOLDIER_CHAR, TUI_SOLDIER_FG, TUI_DEFAULT_BG
+		var solColor termbox.Attribute = TUI_ANOTHER_SOLDIER_FG
+		s := u.(*Soldier)
+		agent := f.AgentForUnitID(s.Id)
+
+		if squad, ok := agent.(*Squad); ok {
+			if squad.Pid == pid {
+				solColor = TUI_SOLDIER_FG
+			}
+		}
+		return TUI_SOLDIER_CHAR, solColor, TUI_DEFAULT_BG
 	case *Damsel:
 		dam := u.(*Damsel)
 		if dam.Adrenaline > 0 {
@@ -480,7 +490,7 @@ func getUnitView(u Unit) (ch rune, fg, bg termbox.Attribute) {
 		}
 	case *Corpse:
 		corpse := u.(*Corpse)
-		ch, fg, _ := getUnitView(corpse.Unit)
+		ch, fg, _ := getUnitView(f, pid, corpse.Unit)
 		return ch, fg, TUI_CORPSE_BG
 	}
 	return ' ', TUI_DEFAULT_FG, TUI_DEFAULT_BG

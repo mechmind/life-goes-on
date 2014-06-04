@@ -216,6 +216,10 @@ func (f *Field) UnitByID(Id int) (UnitCoord, Unit) {
 	return f.Units[Id].Coord, f.Units[Id].Unit
 }
 
+func (f *Field) AgentForUnitID(Id int) Agent {
+	return f.Units[Id].Agent
+}
+
 func (f *Field) UnitsInRange(center UnitCoord, radius float32) []UnitPresence {
 	var Units []UnitPresence
 
