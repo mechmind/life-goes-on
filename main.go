@@ -51,7 +51,7 @@ func main() {
 		// create dispatcher
 		rules := singlePlayerRules
 		if *listen != "" {
-			rules = duelRules
+			rules = coopRules
 			//rules = singlePlayerRules
 		}
 

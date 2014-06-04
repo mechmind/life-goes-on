@@ -17,7 +17,7 @@ const (
 var (
 	singlePlayerRules = Rules{minPlayers: 1, maxPlayers: 1}
 	duelRules         = Rules{minPlayers: 2, maxPlayers: 2}
-	coopRules         = Rules{minPlayers: 1, maxPlayers: 2}
+	coopRules         = Rules{minPlayers: 2, maxPlayers: 4}
 )
 
 type Dispatcher struct {
