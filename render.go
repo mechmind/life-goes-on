@@ -403,7 +403,11 @@ func (lr *LocalRender) drawField(f *Field, pos CellCoord, sv squadView, gameStat
 		banner = "DRAW"
 	}
 	if gameState.State & GAME_OVER > 0 {
-		banner += " | GAME OVER"
+		if banner == "" {
+			banner = "GAME OVER"
+		} else {
+			banner += " | GAME OVER"
+		}
 	}
 	if banner != "" {
 		writeBanner(banner)

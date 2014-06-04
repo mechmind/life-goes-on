@@ -54,14 +54,14 @@ func NewDispatcher(r Rules) *Dispatcher {
 		time: NewTime(TIME_TICKS_PER_SEC)}
 }
 
-func (d *Dispatcher) AttachPlayer(r Render) {
+func (d *Dispatcher) AttachPlayer(r Render) int {
 	req := PlayerReq{Player{render: r}, DISP_ATTACH, -1, make(chan int, 1)}
 	d.playerQueue <- req
-	<-req.resp
+	return <-req.resp
 }
 
 func (d *Dispatcher) DetachPlayer(Id int) {
-	req := PlayerReq{Player{}, DISP_ATTACH, Id, make(chan int, 1)}
+	req := PlayerReq{Player{}, DISP_DETACH, Id, make(chan int, 1)}
 	d.playerQueue <- req
 	<-req.resp
 }
@@ -78,9 +78,15 @@ func (d *Dispatcher) handlePlayerReq(r PlayerReq) {
 	case DISP_DETACH:
 		for idx, p := range d.players {
 			if p.Id == r.Id {
-				// TODO: close render?
+				log.Println("dp: removing player", p.Id)
+				if p.Orders != nil {
+					// kill squad
+					log.Println("dp: killing orphan squad of", p.Id)
+					p.Orders <-Order{ORDER_SUICIDE, CellCoord{}}
+				}
 				copy(d.players[:idx], d.players[idx+1:])
 				d.players = d.players[:len(d.players)-1]
+				break
 			}
 		}
 		r.resp <- 0
@@ -106,8 +112,15 @@ func (d *Dispatcher) Run() {
 		d.field = generateField()
 		d.gameState = d.field.gameState
 
+		// reset state of existing players
+		for _, p := range d.players {
+			p.render.Reset()
+			p.render.Spectate()
+			p.render.HandleUpdate(d.field)
+			p.render.HandleGameState(GameState{GAME_WAIT, -1})
+		}
+
 		// wait for desired amount of players to join
-		// TODO: allow abort
 		for {
 			if d.countPlayers() >= d.rules.minPlayers {
 				break
@@ -129,11 +142,11 @@ func (d *Dispatcher) Run() {
 func (d *Dispatcher) runGame() {
 	// bind players to squads
 	for idx, Player := range d.players {
-		Player.render.Reset()
 		Player.render.HandleGameState(GameState{GAME_RUNNING, -1})
 		if idx < d.rules.maxPlayers {
 			Player.Orders = placeSquad(d.field, idx, Player.Id)
 			Player.render.AssignSquad(Player.Id, Player.Orders)
+			d.players[idx].Orders = Player.Orders
 		} else {
 			Player.render.Spectate()
 		}
@@ -157,6 +170,8 @@ func (d *Dispatcher) runGame() {
 			d.handlePlayerReq(pr)
 			if pr.op == DISP_ATTACH {
 				d.players[len(d.players)-1].render.Spectate()
+			} else {
+				log.Println("disp: detached player", pr.Id)
 			}
 		case State := <-d.gameState:
 			if State.Player >= 0 {

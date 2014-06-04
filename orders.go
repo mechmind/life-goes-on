@@ -7,6 +7,7 @@ const (
 	ORDER_NOFIRE
 	ORDER_SEMIFIRE
 	ORDER_GREN
+	ORDER_SUICIDE
 )
 
 type Order struct {

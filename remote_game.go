@@ -42,8 +42,9 @@ func ConnectRemoteGame(straddr string) (*RemoteGame, error) {
 	return rg, nil
 }
 
-func (rg *RemoteGame) AttachPlayer(r Render) {
+func (rg *RemoteGame) AttachPlayer(r Render) int {
 	rg.attachan <- r
+	return 0
 }
 
 func (rg *RemoteGame) Run() {

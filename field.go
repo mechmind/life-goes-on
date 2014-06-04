@@ -191,6 +191,15 @@ func (f *Field) PlaceAgent(a Agent) error {
 	return nil
 }
 
+func (f *Field) RemoveAgent(a Agent) error {
+	for idx, agent := range f.Agents {
+		if a == agent {
+			f.Agents[idx] = nil
+		}
+	}
+	return nil
+}
+
 func (f *Field) ReplaceUnit(Id int, c UnitCoord, Agent Agent, u Unit) error {
 	f.Units[Id] = UnitPresence{c, Agent, u}
 	u.SetID(Id)

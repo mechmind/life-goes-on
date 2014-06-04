@@ -33,7 +33,7 @@ func main() {
 	rand.Seed(time.Now().Unix())
 
 	var attachTo interface {
-		AttachPlayer(Render)
+		AttachPlayer(Render) int
 	}
 	if *connect != "" {
 		// connect to remote game
