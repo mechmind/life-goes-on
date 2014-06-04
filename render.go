@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"github.com/nsf/termbox-go"
-	"log"
 	"strings"
 )
 
@@ -155,6 +154,7 @@ func (lr *LocalRender) Run() {
 	defer termbox.Close()
 
 	var currentPos CellCoord
+	var doSquadFocus bool
 
 	// FIXME: hardcoded squad values
 	var sv = squadView{FireState: ORDER_FIRE}
@@ -175,11 +175,10 @@ func (lr *LocalRender) Run() {
 			} else {
 				gameState = newGameState
 			}
-			log.Println("lr: got state", gameState.Player, gameState.State)
 		case Assignment := <-lr.assignments:
 			lr.squad = Assignment.Id
 			lr.Orders = Assignment.Orders
-			log.Println("rdr: assigned to squad", lr.squad, "; orders?", lr.Orders == nil)
+			doSquadFocus = true
 		case <-lr.reset:
 			sv = squadView{FireState: ORDER_FIRE}
 		case field = <-lr.updates:
@@ -190,6 +189,22 @@ func (lr *LocalRender) Run() {
 				if gren.From.Cell() == sv.GrenTo {
 					sv.GrenTo = CellCoord{0, 0}
 					break
+				}
+			}
+			if doSquadFocus && lr.squad >= 0 {
+				// center view on our squad
+				for _, a := range field.Agents {
+					if squad, ok := a.(*Squad); ok {
+						if squad.Pid == lr.squad {
+							if len(squad.Units) > 0 {
+								centerOn, _ := field.UnitByID(squad.Units[0].Id)
+								size := tb2cell()
+								currentPos = centerOn.Cell().Add(-size.X/2, -size.Y/2)
+								doSquadFocus = false
+							}
+							break
+						}
+					}
 				}
 			}
 			lr.drawField(field, currentPos, sv, gameState, msg)
