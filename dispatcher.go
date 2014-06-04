@@ -2,11 +2,16 @@ package main
 
 import (
 	"log"
+	"time"
 )
 
 const (
 	DISP_ATTACH = iota
 	DISP_DETACH
+)
+
+const (
+	GAMEOVER_FADEOUT_TIME = time.Second * 5
 )
 
 var (
@@ -124,6 +129,8 @@ func (d *Dispatcher) Run() {
 func (d *Dispatcher) runGame() {
 	// bind players to squads
 	for idx, Player := range d.players {
+		Player.render.Reset()
+		Player.render.HandleGameState(GameState{GAME_RUNNING, -1})
 		if idx < d.rules.maxPlayers {
 			Player.Orders = placeSquad(d.field, idx, Player.Id)
 			Player.render.AssignSquad(Player.Id, Player.Orders)
@@ -136,7 +143,9 @@ func (d *Dispatcher) runGame() {
 
 	// start game timer
 	d.time.SetTicker(d.field)
+	var fadeout <-chan time.Time
 	go d.time.Run()
+	defer d.time.Stop()
 	for {
 		select {
 		case field := <-d.field.updates:
@@ -151,17 +160,25 @@ func (d *Dispatcher) runGame() {
 			}
 		case State := <-d.gameState:
 			if State.Player >= 0 {
+				log.Println("disp: got news for", State.Player, "news is", State.State)
 				Player := d.playerById(State.Player)
 				if Player == nil {
 					continue
 				}
 				Player.render.HandleGameState(State)
 			} else {
+				log.Println("disp: got news for everyone news is", State.State)
 				for _, p := range d.players {
 					p.render.HandleGameState(State)
 				}
 			}
-			// TODO: abort channel
+
+			if State.State == GAME_OVER {
+				// game is over
+				fadeout = time.After(GAMEOVER_FADEOUT_TIME)
+			}
+		case <-fadeout:
+			return
 		}
 	}
 }

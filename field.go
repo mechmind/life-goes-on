@@ -9,6 +9,7 @@ const (
 	FLOAT_ERROR           = 0.000001
 	FIELD_BACKBUFFER_SIZE = 3
 	FIELD_SIZE            = 1024
+	FIELD_GAME_STATE_BUF  = 10
 )
 
 const (
@@ -47,12 +48,13 @@ type Field struct {
 
 	// game state
 	gameState chan GameState
+	gameOver bool
 }
 
 func NewField(XSize, YSize int, updates chan *Field) *Field {
 	rng := rand.New(rand.NewSource(time.Now().Unix()))
 	field := &Field{XSize, YSize, make([]Cell, XSize*YSize), nil, nil, updates, nil, nil, rng,
-		make(chan GameState, 5)}
+		make(chan GameState, FIELD_GAME_STATE_BUF), false}
 	field.makePassableField()
 	field.computeSlopes()
 	return field
@@ -116,37 +118,64 @@ func (f *Field) Tick(tick int64) {
 	}
 
 	// check game over
-	if tick%TIME_TICKS_PER_SEC == 0 {
-		var Zs, Bs, Ss int
-		for _, u := range f.Units {
-			switch u.Unit.(type) {
-			case *Zed:
-				Zs++
-			case *Damsel:
-				Bs++
-			case *Soldier:
-				Ss++
-			}
-		}
-		if Ss == 0 {
-			f.gameState <- GameState{GAME_OVER, -1}
-		}
-		// TODO: rebuild
-		/*
-			if Zs == 0 {
-				if Bs == 0 {
-					f.gameState <- GAME_DRAW
-				} else {
-					f.gameState <- GAME_WIN
-				}
-			}
-			//*/
+	if tick%TIME_TICKS_PER_SEC == 0 && ! f.gameOver {
+		f.checkGameOver()
 	}
 
 	// send update
 	select {
 	case f.updates <- copyField(f):
 	default:
+	}
+}
+
+func (f *Field) checkGameOver() {
+	var Zs, Bs, Ss int
+	for _, u := range f.Units {
+		switch u.Unit.(type) {
+		case *Zed:
+			Zs++
+		case *Corpse:
+			c := u.Unit.(*Corpse)
+			if c.RessurectCounter > 0 {
+				Zs++
+			}
+		case *Damsel:
+			Bs++
+		case *Soldier:
+			Ss++
+		}
+	}
+
+	for idx, agent := range f.Agents {
+		if squad, ok := agent.(*Squad); ok {
+			if len(squad.Units) == 0 {
+				// all soldiers are dead, so player is defeated
+				f.Agents[idx] = nil
+				f.gameState <- GameState{GAME_LOSE, squad.Pid}
+			}
+		}
+	}
+
+	if Ss == 0 {
+		f.gameState <- GameState{GAME_OVER, -1}
+		f.gameOver = true
+	}
+
+	if Zs == 0 {
+		winstate := GAME_DRAW
+		if Bs != 0 {
+			// finally WIN!
+			winstate = GAME_WIN
+		}
+
+		for _, agent := range f.Agents {
+			if squad, ok := agent.(*Squad); ok {
+				f.gameState <- GameState{winstate, squad.Pid}
+			}
+		}
+		f.gameState <- GameState{GAME_OVER, -1}
+		f.gameOver = true
 	}
 }
 

@@ -22,13 +22,15 @@ type RemoteRender struct {
 	conn                *net.TCPConn
 	readErrs, writeErrs chan error
 	mapSent             bool
+	reset               chan struct{}
 }
 
 func CreateRemoteRender(conn *net.TCPConn) *RemoteRender {
 	return &RemoteRender{updates: make(chan *Field, 3), stateUpdates: make(chan GameState, 3),
 		squad: -1, assignments: make(chan Assignment, 1),
 		localUpdates: make(chan *Field, 3), localStateUpdates: make(chan GameState, 3),
-		conn: conn, readErrs: make(chan error), writeErrs: make(chan error)}
+		conn: conn, readErrs: make(chan error), writeErrs: make(chan error),
+		reset: make(chan struct{}, 1)}
 }
 
 func (rr *RemoteRender) HandleUpdate(f *Field) {
@@ -55,6 +57,7 @@ func (rr *RemoteRender) Spectate() {
 
 func (rr *RemoteRender) Reset() {
 	rr.mapSent = false
+	rr.reset <- struct{}{}
 }
 
 func (rr *RemoteRender) Run() error {
@@ -64,6 +67,7 @@ func (rr *RemoteRender) Run() error {
 		select {
 		// local channels
 		//case assignment := <-rr.assignments: // handled directly by writer
+		//case <-rr.reset // handled directly by writer
 		case field := <-rr.updates:
 			field = copyField(field)
 			if rr.mapSent {
@@ -129,6 +133,12 @@ func (rr *RemoteRender) runWriter() {
 		case State := <-rr.localStateUpdates:
 			log.Println("rr: sending state")
 			err := encoder.Encode(UpdateBulk{GameState: &State})
+			if err != nil {
+				rr.writeErrs <- err
+				return
+			}
+		case <-rr.reset:
+			err := encoder.Encode(UpdateBulk{Reset: true})
 			if err != nil {
 				rr.writeErrs <- err
 				return

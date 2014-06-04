@@ -87,8 +87,10 @@ func (rg *RemoteGame) runReader() {
 		case ub.GameState != nil:
 			// is an game state
 			State := *ub.GameState
-			log.Println("rg: got state")
+			log.Println("rg: got state", State.Player, State.State)
 			rg.render.HandleGameState(State)
+		case ub.Reset == true:
+			rg.render.Reset()
 		default:
 			rg.readErrs <- errors.New("all bulk fields are nil")
 			return

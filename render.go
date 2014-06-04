@@ -87,11 +87,13 @@ type LocalRender struct {
 	assignments  chan Assignment
 
 	events chan termbox.Event
+	reset chan struct{}
 }
 
 func NewLocalRender() *LocalRender {
 	return &LocalRender{updates: make(chan *Field, 3), stateUpdates: make(chan GameState, 3),
-		squad: -1, assignments: make(chan Assignment, 1), events: make(chan termbox.Event)}
+		squad: -1, assignments: make(chan Assignment, 1), events: make(chan termbox.Event),
+		reset: make(chan struct{}, 1)}
 }
 
 func (lr *LocalRender) HandleUpdate(f *Field) {
@@ -116,7 +118,9 @@ func (lr *LocalRender) Spectate() {
 	lr.assignments <- Assignment{-1, nil}
 }
 
-func (lr *LocalRender) Reset() {}
+func (lr *LocalRender) Reset() {
+	lr.reset <- struct{}{}
+}
 
 func (lr *LocalRender) Init() {
 	go pollEvents(lr.events)
@@ -144,11 +148,19 @@ func (lr *LocalRender) Run() {
 	lr.drawField(field, currentPos, sv, gameState)
 	for {
 		select {
-		case gameState = <-lr.stateUpdates:
+		case newGameState := <-lr.stateUpdates:
+			if newGameState.State == GAME_OVER {
+				gameState.State |= newGameState.State
+			} else {
+				gameState = newGameState
+			}
+			log.Println("lr: got state", gameState.Player, gameState.State)
 		case Assignment := <-lr.assignments:
 			lr.squad = Assignment.Id
 			lr.Orders = Assignment.Orders
 			log.Println("rdr: assigned to squad", lr.squad, "; orders?", lr.Orders == nil)
+		case <-lr.reset:
+			sv = squadView{FireState: ORDER_FIRE}
 		case field = <-lr.updates:
 
 			// update rendering state
@@ -381,13 +393,20 @@ func (lr *LocalRender) drawField(f *Field, pos CellCoord, sv squadView, gameStat
 		statusPos+1, yPos)
 
 	// render gameover block if nesessary
-	switch gameState.State {
-	case GAME_WIN:
-		writeBanner("YOU WIN")
-	case GAME_LOSE:
-		writeBanner("YOU LOSE")
-	case GAME_DRAW:
-		writeBanner("DRAW")
+	var banner string
+	switch {
+	case gameState.State & GAME_WIN > 0:
+		banner = "YOU WIN"
+	case gameState.State & GAME_LOSE > 0:
+		banner = "YOU LOSE"
+	case gameState.State & GAME_DRAW > 0:
+		banner = "DRAW"
+	}
+	if gameState.State & GAME_OVER > 0 {
+		banner += " | GAME OVER"
+	}
+	if banner != "" {
+		writeBanner(banner)
 	}
 	termbox.Flush()
 }
