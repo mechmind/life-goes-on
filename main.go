@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"math/rand"
 	"os"
@@ -15,6 +16,7 @@ const (
 var listen = flag.String("listen", "", "start server on given address")
 var connect = flag.String("connect", "", "connect to server on giving address")
 var logfile = flag.String("log", "lgo.log", "log to that file")
+var standalone = flag.Bool("standalone", false, "run server as standalone")
 
 func main() {
 	flag.Parse()
@@ -66,13 +68,20 @@ func main() {
 		}
 	}
 
-	// create local render
-	render := NewLocalRender()
-	render.Init()
+	if *listen != "" && *standalone {
+		fmt.Println("server started on", *listen)
+		for {
+			time.Sleep(time.Hour)
+		}
+	} else {
+		// create local render
+		render := NewLocalRender()
+		render.Init()
 
-	// attach render (as player)
-	attachTo.AttachPlayer(render)
+		// attach render (as player)
+		attachTo.AttachPlayer(render)
 
-	// run render
-	render.Run()
+		// run render
+		render.Run()
+	}
 }
