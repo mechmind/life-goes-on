@@ -41,7 +41,11 @@ func (g GameState) String() string {
 		end = "DRAW"
 	}
 	if end != "" {
-		str += " " + end
+		if str != "" {
+			str += " " + end
+		} else {
+			str = end
+		}
 	}
 
 	if g.Player >= 0 {
