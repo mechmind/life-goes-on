@@ -85,10 +85,10 @@ func (d *Dispatcher) handlePlayerReq(r PlayerReq) {
 					// kill squad
 					p.Orders <- Order{ORDER_SUICIDE, CellCoord{}}
 				}
-				copy(d.players[:idx], d.players[idx+1:])
+				copy(d.players[idx:], d.players[idx+1:])
 				d.players = d.players[:len(d.players)-1]
 				d.sendAll(MESSAGE_LEVEL_INFO, "player left the match")
-				log.Printf("dispatcher: detached player with id", p.Id)
+				log.Println("dispatcher: detached player with id", p.Id)
 				return
 			}
 		}
