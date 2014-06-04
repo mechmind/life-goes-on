@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"time"
 )
 
@@ -11,7 +11,7 @@ const (
 )
 
 const (
-	GAMEOVER_FADEOUT_TIME = time.Second * 5
+	GAMEOVER_COUNTDOWN = 5
 )
 
 var (
@@ -74,18 +74,17 @@ func (d *Dispatcher) handlePlayerReq(r PlayerReq) {
 		d.lastid++
 		d.players[len(d.players)-1].Id = Pid
 		r.resp <- Pid
-		log.Println("dp: attached player, id", Pid)
+		d.sendAll(MESSAGE_LEVEL_INFO, "player joined the match")
 	case DISP_DETACH:
 		for idx, p := range d.players {
 			if p.Id == r.Id {
-				log.Println("dp: removing player", p.Id)
 				if p.Orders != nil {
 					// kill squad
-					log.Println("dp: killing orphan squad of", p.Id)
 					p.Orders <-Order{ORDER_SUICIDE, CellCoord{}}
 				}
 				copy(d.players[:idx], d.players[idx+1:])
 				d.players = d.players[:len(d.players)-1]
+				d.sendAll(MESSAGE_LEVEL_INFO, "player left the match")
 				break
 			}
 		}
@@ -125,6 +124,9 @@ func (d *Dispatcher) Run() {
 			if d.countPlayers() >= d.rules.minPlayers {
 				break
 			}
+			d.sendAll(MESSAGE_LEVEL_INFO,
+				fmt.Sprintf("waiting for %d players to join...",
+					d.rules.minPlayers - d.countPlayers()))
 			req := <-d.playerQueue
 			d.handlePlayerReq(req)
 			if req.op == DISP_ATTACH {
@@ -156,9 +158,13 @@ func (d *Dispatcher) runGame() {
 
 	// start game timer
 	d.time.SetTicker(d.field)
-	var fadeout <-chan time.Time
+	var countdownTicker <-chan time.Time
 	go d.time.Run()
 	defer d.time.Stop()
+
+	d.sendAll(MESSAGE_LEVEL_INFO, "let the apocalypse begin!")
+	var countdownMsg = "new round in "
+	var countdown = GAMEOVER_COUNTDOWN
 	for {
 		select {
 		case field := <-d.field.updates:
@@ -170,19 +176,15 @@ func (d *Dispatcher) runGame() {
 			d.handlePlayerReq(pr)
 			if pr.op == DISP_ATTACH {
 				d.players[len(d.players)-1].render.Spectate()
-			} else {
-				log.Println("disp: detached player", pr.Id)
 			}
 		case State := <-d.gameState:
 			if State.Player >= 0 {
-				log.Println("disp: got news for", State.Player, "news is", State.State)
 				Player := d.playerById(State.Player)
 				if Player == nil {
 					continue
 				}
 				Player.render.HandleGameState(State)
 			} else {
-				log.Println("disp: got news for everyone news is", State.State)
 				for _, p := range d.players {
 					p.render.HandleGameState(State)
 				}
@@ -190,10 +192,21 @@ func (d *Dispatcher) runGame() {
 
 			if State.State == GAME_OVER {
 				// game is over
-				fadeout = time.After(GAMEOVER_FADEOUT_TIME)
+				countdownTicker = time.Tick(time.Second)
 			}
-		case <-fadeout:
-			return
+		case <-countdownTicker:
+			countdown--
+			countdownMsg += fmt.Sprintf("%d... ", countdown)
+			d.sendAll(MESSAGE_LEVEL_INFO, countdownMsg)
+			if countdown == 0 {
+				return
+			}
 		}
+	}
+}
+
+func (d *Dispatcher) sendAll(lvl int, msg string) {
+	for _, p := range d.players {
+		p.render.HandleMessage(lvl, msg)
 	}
 }

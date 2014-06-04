@@ -27,4 +27,5 @@ type UpdateBulk struct {
 	Assignment *Assignment
 	GameState  *GameState
 	Reset bool
+	Message *Message
 }

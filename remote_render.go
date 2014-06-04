@@ -13,6 +13,7 @@ const (
 type RemoteRender struct {
 	updates      chan *Field
 	Orders       chan Order
+	messages     chan Message
 	squad        int
 	stateUpdates chan GameState
 	assignments  chan Assignment
@@ -30,7 +31,7 @@ func CreateRemoteRender(conn *net.TCPConn) *RemoteRender {
 		squad: -1, assignments: make(chan Assignment, 1),
 		localUpdates: make(chan *Field, 3), localStateUpdates: make(chan GameState, 3),
 		conn: conn, readErrs: make(chan error), writeErrs: make(chan error),
-		reset: make(chan struct{}, 1)}
+		reset: make(chan struct{}, 1), messages: make(chan Message, 1)}
 }
 
 func (rr *RemoteRender) HandleUpdate(f *Field) {
@@ -43,6 +44,13 @@ func (rr *RemoteRender) HandleUpdate(f *Field) {
 func (rr *RemoteRender) HandleGameState(s GameState) {
 	select {
 	case rr.stateUpdates <- s:
+	default:
+	}
+}
+
+func (rr *RemoteRender) HandleMessage(lvl int, msg string) {
+	select {
+	case rr.messages <- Message{lvl, msg, MESSAGE_TTL}:
 	default:
 	}
 }
@@ -137,6 +145,13 @@ func (rr *RemoteRender) runWriter() {
 				rr.writeErrs <- err
 				return
 			}
+		case msg := <-rr.messages:
+			err := encoder.Encode(UpdateBulk{Message: &msg})
+			if err != nil {
+				rr.writeErrs <- err
+				return
+			}
+
 		case <-rr.reset:
 			err := encoder.Encode(UpdateBulk{Reset: true})
 			if err != nil {

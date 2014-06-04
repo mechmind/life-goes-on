@@ -61,6 +61,7 @@ func (rg *RemoteGame) Run() {
 	case err := <-rg.writeErrs:
 		log.Println("conn: write failed:", err)
 	}
+	rg.render.HandleMessage(MESSAGE_LEVEL_INFO, "connection to server have been terminated")
 }
 
 func (rg *RemoteGame) runReader() {
@@ -90,6 +91,9 @@ func (rg *RemoteGame) runReader() {
 			State := *ub.GameState
 			log.Println("rg: got state", State.Player, State.State)
 			rg.render.HandleGameState(State)
+		case ub.Message != nil:
+			msg := ub.Message
+			rg.render.HandleMessage(msg.Level, msg.Content)
 		case ub.Reset == true:
 			rg.render.Reset()
 		default:

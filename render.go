@@ -54,7 +54,11 @@ const (
 	// status
 	TUI_STATUS_FIRE_FG = termbox.ColorRed
 	TUI_STATUS_INFO_FG = termbox.ColorWhite | termbox.AttrBold
+	
+	MESSAGE_LEVEL_INFO = 1
+	MESSAGE_TTL        = 50
 )
+
 
 var boomingColors = [SOL_GREN_TICK_CAP + 1]struct {
 	fg, bg termbox.Attribute
@@ -69,6 +73,7 @@ var boomingColors = [SOL_GREN_TICK_CAP + 1]struct {
 type Render interface {
 	HandleUpdate(*Field)
 	HandleGameState(GameState)
+	HandleMessage(int, string)
 	AssignSquad(int, chan Order)
 	Spectate()
 	Reset()
@@ -79,9 +84,16 @@ type Assignment struct {
 	Orders chan Order
 }
 
+type Message struct {
+	Level int
+	Content string
+	ttl int
+}
+
 type LocalRender struct {
 	updates      chan *Field
 	Orders       chan Order
+	messages     chan Message
 	squad        int
 	stateUpdates chan GameState
 	assignments  chan Assignment
@@ -93,7 +105,7 @@ type LocalRender struct {
 func NewLocalRender() *LocalRender {
 	return &LocalRender{updates: make(chan *Field, 3), stateUpdates: make(chan GameState, 3),
 		squad: -1, assignments: make(chan Assignment, 1), events: make(chan termbox.Event),
-		reset: make(chan struct{}, 1)}
+		reset: make(chan struct{}, 1), messages: make(chan Message, 1)}
 }
 
 func (lr *LocalRender) HandleUpdate(f *Field) {
@@ -106,6 +118,13 @@ func (lr *LocalRender) HandleUpdate(f *Field) {
 func (lr *LocalRender) HandleGameState(s GameState) {
 	select {
 	case lr.stateUpdates <- s:
+	default:
+	}
+}
+
+func (lr *LocalRender) HandleMessage(lvl int, msg string) {
+	select {
+	case lr.messages <-Message{lvl, msg, MESSAGE_TTL}:
 	default:
 	}
 }
@@ -144,10 +163,12 @@ func (lr *LocalRender) Run() {
 	var field = <-lr.updates
 
 	var gameState = GameState{State: GAME_WAIT}
+	var msg Message
 
-	lr.drawField(field, currentPos, sv, gameState)
+	lr.drawField(field, currentPos, sv, gameState, msg)
 	for {
 		select {
+		case msg = <-lr.messages:
 		case newGameState := <-lr.stateUpdates:
 			if newGameState.State == GAME_OVER {
 				gameState.State |= newGameState.State
@@ -171,7 +192,7 @@ func (lr *LocalRender) Run() {
 					break
 				}
 			}
-			lr.drawField(field, currentPos, sv, gameState)
+			lr.drawField(field, currentPos, sv, gameState, msg)
 		case ev := <-lr.events:
 			switch ev.Type {
 			case termbox.EventMouse:
@@ -234,26 +255,28 @@ func (lr *LocalRender) Run() {
 				case ev.Key == termbox.KeyF10:
 					return
 				}
-				lr.drawField(field, currentPos, sv, gameState)
+				lr.drawField(field, currentPos, sv, gameState, msg)
 			case termbox.EventResize:
-				lr.drawField(field, currentPos, sv, gameState)
+				lr.drawField(field, currentPos, sv, gameState, msg)
 			}
 		}
+		msg.ttl--
 	}
 }
 
 // render field chunk that we currently looking at
-func (lr *LocalRender) drawField(f *Field, pos CellCoord, sv squadView, gameState GameState) {
+func (lr *LocalRender) drawField(f *Field, pos CellCoord, sv squadView, gameState GameState,
+	msg Message) {
 	// 2 lines are reserved for messages and status bars
-	upperBound := tb2cell().Add(-1, -1).AddCoord(pos)
+	upperBound := tb2cell().Add(-1, -3).AddCoord(pos)
 
 	termbox.Clear(TUI_DEFAULT_FG, TUI_DEFAULT_BG)
 
 	var fieldZero = CellCoord{0, 0}
 	var fieldMax = CellCoord{f.XSize - 1, f.YSize - 1}
 	// render walls
-	for i := pos.X; i < upperBound.X; i++ {
-		for j := pos.Y; j < upperBound.Y; j++ {
+	for i := pos.X; i <= upperBound.X; i++ {
+		for j := pos.Y; j <= upperBound.Y; j++ {
 			tileCell := CellCoord{i, j}
 			screenPos := tileCell.AddCoord(pos.Mult(-1))
 			if !CheckCellCoordBounds(tileCell, fieldZero, fieldMax) {
@@ -375,6 +398,13 @@ func (lr *LocalRender) drawField(f *Field, pos CellCoord, sv squadView, gameStat
 			statusPos, yPos)
 	}
 
+	// render message, if any
+	if msg.ttl > 0 {
+		switch msg.Level {
+		case MESSAGE_LEVEL_INFO:
+			writeTermString(msg.Content, TUI_STATUS_INFO_FG, TUI_DEFAULT_BG, 0, yPos-1)
+		}
+	}
 
 	// count Zs and Bs and show that count in status
 	var Zs, Bs int
