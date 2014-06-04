@@ -18,8 +18,14 @@ var connect = flag.String("connect", "", "connect to server on giving address")
 var logfile = flag.String("log", "lgo.log", "log to that file")
 var standalone = flag.Bool("standalone", false, "run server as standalone")
 
+var defaultServerAddr string
+
 func main() {
 	flag.Parse()
+	if defaultServerAddr != "" && *connect == "" {
+		*connect = defaultServerAddr
+	}
+
 	// set up logging
 	f, err := os.Create(*logfile)
 	if err != nil {
