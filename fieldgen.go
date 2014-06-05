@@ -26,7 +26,15 @@ func populateField(field *Field, rules Rules) {
 	var crowd Agent = &DamselCrowd{}
 	field.PlaceAgent(crowd)
 
-	for idx := 0; idx < TOTAL_DAMSELS; idx++ {
+	// respect additional Bs
+	totalDamsels := TOTAL_DAMSELS + rules.moreBs
+	for _, a := range field.Agents {
+		if _, ok := a.(*Squad); ok {
+			totalDamsels += rules.moreBsP
+		}
+	}
+
+	for idx := 0; idx < totalDamsels; idx++ {
 		var Coord UnitCoord
 		for {
 			Coord = UnitCoord{field.rng.Float32()*150 + 1, field.rng.Float32()*150 + 1}

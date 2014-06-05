@@ -8,10 +8,10 @@ import (
 var (
 	allRules = map[string]Rules{
 		"single": Rules{minPlayers: 1, maxPlayers: 1},
-		"duel": Rules{minPlayers: 2, maxPlayers: 2, versus: true},
+		"bandits": Rules{minPlayers: 2, maxPlayers: 2, versus: true},
 		"classic": Rules{minPlayers: 2, maxPlayers: 4},
 		"king-of-hill": Rules{minPlayers: 2, maxPlayers: 4, versus: true},
-		"survival": Rules{minPlayers: 2, maxPlayers: 4, moreBs: 100, moreBsP: 40},
+		"crowds": Rules{minPlayers: 2, maxPlayers: 4, moreBs: 100, moreBsP: 40},
 	}
 )
 
@@ -26,6 +26,7 @@ type Rules struct {
 }
 
 func (r Rules) String() string {
+	var info = []string{r.name}
 	var players string
 	if r.minPlayers == r.maxPlayers {
 		if r.minPlayers == 1 {
@@ -36,26 +37,23 @@ func (r Rules) String() string {
 	} else {
 		players = fmt.Sprintf("%d..%d players", r.minPlayers, r.maxPlayers)
 	}
+	info = append(info, players)
 
-	var aggr string
 	if r.versus {
-		aggr = "versus"
+		info = append(info, "versus")
 	} else {
-		aggr = "coop"
+		info = append(info, "coop")
 	}
 
-	var moreBBs string
 	if r.moreBs > 0 {
-		moreBBs = fmt.Sprintf("+100 base Bs")
+		info = append(info, fmt.Sprintf("+%d base Bs", r.moreBs))
 	}
 
-	var morePBs string
 	if r.moreBsP > 0 {
-		morePBs = fmt.Sprintf("+100 perP Bs")
+		info = append(info, fmt.Sprintf("+%d perP Bs", r.moreBsP))
 	}
 
-	rules := []string{r.name, players, aggr, moreBBs, morePBs}
-	return "rules: " + joinNonEmptyStrings(rules, ", ")
+	return "rules: " + joinNonEmptyStrings(info, ", ")
 }
 
 type Ruleset []Rules
