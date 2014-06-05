@@ -10,8 +10,9 @@ var (
 		"single": Rules{minPlayers: 1, maxPlayers: 1},
 		"wild-west": Rules{minPlayers: 2, maxPlayers: 2, versus: true},
 		"classic": Rules{minPlayers: 2, maxPlayers: 4},
-		"king-of-hill": Rules{minPlayers: 2, maxPlayers: 4, moreBs: 100, versus: true},
+		"king-of-hill": Rules{minPlayers: 2, maxPlayers: 4, moreBs: 50, versus: true},
 		"crowds": Rules{minPlayers: 2, maxPlayers: 4, moreBs: 100, moreBsP: 40},
+		"skirmish": Rules{minPlayers: 2, maxPlayers: 4, moreZs: 15},
 	}
 )
 
@@ -21,6 +22,7 @@ type Rules struct {
 	versus bool
 	moreBs int
 	moreBsP int
+	moreZs int
 
 	name string
 }
@@ -51,6 +53,10 @@ func (r Rules) String() string {
 
 	if r.moreBsP > 0 {
 		info = append(info, fmt.Sprintf("+%d perP Bs", r.moreBsP))
+	}
+
+	if r.moreZs > 0 {
+		info = append(info, fmt.Sprintf("+%d start Zs", r.moreZs))
 	}
 
 	return joinNonEmptyStrings(info, ", ")

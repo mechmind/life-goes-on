@@ -12,15 +12,28 @@ func generateField(rules Rules) *Field {
 	return field
 }
 
+func findFreeCellInRange(field *Field, center CellCoord, r float32) CellCoord {
+	for {
+		cx := field.rng.Float32() * r * 2 - r + float32(center.X)
+		cy := field.rng.Float32() * r * 2 - r + float32(center.Y)
+		coord := CellCoord{int(cx), int(cy)}
+		if field.CellAt(coord).Passable {
+			return coord
+		}
+	}
+}
+
+
 func populateField(field *Field, rules Rules) {
 	// zeds
 	var swarm Agent = &ZedSwarm{}
-	var zed1 = NewZed(field)
-	var zed2 = NewZed(field)
 
 	field.PlaceAgent(swarm)
-	field.PlaceUnit(UnitCoord{80, 85}, swarm, zed1)
-	field.PlaceUnit(UnitCoord{85, 80}, swarm, zed2)
+	for i := 0; i < TOTAL_ZEDS + rules.moreZs; i++ {
+		field.PlaceUnit(
+			findFreeCellInRange(field, CellCoord{80, 80}, ZED_SPREAD_RADIUS).UnitCenter(),
+			swarm, NewZed(field))
+	}
 
 	// damsels
 	var crowd Agent = &DamselCrowd{}

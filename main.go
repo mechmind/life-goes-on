@@ -10,7 +10,9 @@ import (
 )
 
 const (
-	TOTAL_DAMSELS = 300
+	TOTAL_DAMSELS = 350
+	TOTAL_ZEDS = 2
+	ZED_SPREAD_RADIUS = 4
 )
 
 var listen = flag.String("listen", "", "start server on given address")
