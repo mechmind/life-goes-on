@@ -14,7 +14,6 @@ func generateField(rules Rules) *Field {
 
 func populateField(field *Field, rules Rules) {
 	// zeds
-	/*
 	var swarm Agent = &ZedSwarm{}
 	var zed1 = NewZed(field)
 	var zed2 = NewZed(field)
@@ -22,7 +21,6 @@ func populateField(field *Field, rules Rules) {
 	field.PlaceAgent(swarm)
 	field.PlaceUnit(UnitCoord{80, 85}, swarm, zed1)
 	field.PlaceUnit(UnitCoord{85, 80}, swarm, zed2)
-	*/
 
 	// damsels
 	var crowd Agent = &DamselCrowd{}
