@@ -8,9 +8,9 @@ import (
 var (
 	allRules = map[string]Rules{
 		"single": Rules{minPlayers: 1, maxPlayers: 1},
-		"bandits": Rules{minPlayers: 2, maxPlayers: 2, versus: true},
+		"wild-west": Rules{minPlayers: 2, maxPlayers: 2, versus: true},
 		"classic": Rules{minPlayers: 2, maxPlayers: 4},
-		"king-of-hill": Rules{minPlayers: 2, maxPlayers: 4, versus: true},
+		"king-of-hill": Rules{minPlayers: 2, maxPlayers: 4, moreBs: 100, versus: true},
 		"crowds": Rules{minPlayers: 2, maxPlayers: 4, moreBs: 100, moreBsP: 40},
 	}
 )
