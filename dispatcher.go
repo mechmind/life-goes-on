@@ -173,7 +173,7 @@ func (d *Dispatcher) runGame() {
 	go d.time.Run()
 	defer d.time.Stop()
 
-	d.sendAll(MESSAGE_LEVEL_INFO, rules.String())
+	d.sendAll(MESSAGE_LEVEL_RULE, rules.String())
 
 	var countdownMsg = "new round in "
 	var countdown = GAMEOVER_COUNTDOWN

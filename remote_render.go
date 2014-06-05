@@ -31,7 +31,7 @@ func CreateRemoteRender(conn *net.TCPConn) *RemoteRender {
 		squad: -1, assignments: make(chan Assignment, 1),
 		localUpdates: make(chan *Field, 3), localStateUpdates: make(chan GameState, 3),
 		conn: conn, readErrs: make(chan error), writeErrs: make(chan error),
-		reset: make(chan struct{}, 1), messages: make(chan Message, 1)}
+		reset: make(chan struct{}, 1), messages: make(chan Message, 2)}
 }
 
 func (rr *RemoteRender) HandleUpdate(f *Field) {

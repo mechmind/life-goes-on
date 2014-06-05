@@ -53,7 +53,7 @@ func (r Rules) String() string {
 		info = append(info, fmt.Sprintf("+%d perP Bs", r.moreBsP))
 	}
 
-	return "rules: " + joinNonEmptyStrings(info, ", ")
+	return joinNonEmptyStrings(info, ", ")
 }
 
 type Ruleset []Rules

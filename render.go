@@ -57,6 +57,7 @@ const (
 	TUI_STATUS_INFO_FG = termbox.ColorWhite | termbox.AttrBold
 
 	MESSAGE_LEVEL_INFO = 1
+	MESSAGE_LEVEL_RULE = 2
 	MESSAGE_TTL        = 80
 )
 
@@ -179,14 +180,20 @@ func (lr *LocalRender) Run() {
 	var field = <-lr.updates
 
 	var gameState = GameState{State: GAME_WAIT}
+	var rulesMsg string
 	var msg Message
 
-	lr.drawField(field, currentPos, sv, gameState, msg)
+	lr.drawField(field, currentPos, sv, gameState, msg, rulesMsg)
 	log.Println("render: starting main loop")
 	for {
 		select {
-		case msg = <-lr.messages:
-			lr.drawField(field, currentPos, sv, gameState, msg)
+		case newMsg := <-lr.messages:
+			if newMsg.Level == MESSAGE_LEVEL_RULE {
+				rulesMsg = newMsg.Content
+			} else {
+				msg = newMsg
+			}
+			lr.drawField(field, currentPos, sv, gameState, msg, rulesMsg)
 		case newGameState := <-lr.stateUpdates:
 			if newGameState.State == GAME_OVER {
 				gameState.State |= newGameState.State
@@ -228,7 +235,7 @@ func (lr *LocalRender) Run() {
 					}
 				}
 			}
-			lr.drawField(field, currentPos, sv, gameState, msg)
+			lr.drawField(field, currentPos, sv, gameState, msg, rulesMsg)
 		case ev := <-lr.events:
 			switch ev.Type {
 			case termbox.EventMouse:
@@ -291,9 +298,9 @@ func (lr *LocalRender) Run() {
 				case ev.Key == termbox.KeyF10:
 					return
 				}
-				lr.drawField(field, currentPos, sv, gameState, msg)
+				lr.drawField(field, currentPos, sv, gameState, msg, rulesMsg)
 			case termbox.EventResize:
-				lr.drawField(field, currentPos, sv, gameState, msg)
+				lr.drawField(field, currentPos, sv, gameState, msg, rulesMsg)
 			}
 		}
 		msg.ttl--
@@ -302,7 +309,7 @@ func (lr *LocalRender) Run() {
 
 // render field chunk that we currently looking at
 func (lr *LocalRender) drawField(f *Field, pos CellCoord, sv squadView, gameState GameState,
-	msg Message) {
+	msg Message, rulesMsg string) {
 	// 2 lines are reserved for messages and status bars
 	upperBound := tb2cell().Add(-1, -3).AddCoord(pos)
 
@@ -456,6 +463,9 @@ func (lr *LocalRender) drawField(f *Field, pos CellCoord, sv squadView, gameStat
 	statusPos = writeTermString(fmt.Sprintf("Zs: %d", Zs), TUI_ZED_FG, TUI_DEFAULT_BG,
 		statusPos+1, yPos)
 	statusPos = writeTermString(fmt.Sprintf("Bs: %d", Bs), TUI_DAMSEL_FG, TUI_DEFAULT_BG,
+		statusPos+1, yPos)
+
+	statusPos = writeTermString(rulesMsg, TUI_STATUS_INFO_FG, TUI_DEFAULT_BG,
 		statusPos+1, yPos)
 
 	// render gameover block if nesessary
