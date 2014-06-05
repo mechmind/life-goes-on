@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"runtime"
+	"strings"
 )
 
 func fabs(f float32) float32 {
@@ -69,4 +70,26 @@ func logPanic() {
 		n := runtime.Stack(stack, false)
 		log.Println(string(stack[:n]))
 	}
+}
+
+// stringSet implements flag.Value interface
+type stringSet []string
+
+func (s *stringSet) String() string {
+	return strings.Join(*s, " ")
+}
+
+func (s *stringSet) Set(value string) error {
+	*s = append(*s, value)
+	return nil
+}
+
+func joinNonEmptyStrings(strs []string, sep string) string {
+	var dst []string
+	for _, str := range strs {
+		if str != "" {
+			dst = append(dst, str)
+		}
+	}
+	return strings.Join(dst, sep)
 }

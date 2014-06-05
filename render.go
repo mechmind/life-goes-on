@@ -57,7 +57,7 @@ const (
 	TUI_STATUS_INFO_FG = termbox.ColorWhite | termbox.AttrBold
 
 	MESSAGE_LEVEL_INFO = 1
-	MESSAGE_TTL        = 50
+	MESSAGE_TTL        = 80
 )
 
 var boomingColors = [SOL_GREN_TICK_CAP + 1]struct {

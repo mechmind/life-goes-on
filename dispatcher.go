@@ -15,16 +15,12 @@ const (
 	GAMEOVER_COUNTDOWN = 5
 )
 
-var (
-	singlePlayerRules = Rules{minPlayers: 1, maxPlayers: 1}
-	duelRules         = Rules{minPlayers: 2, maxPlayers: 2}
-	coopRules         = Rules{minPlayers: 2, maxPlayers: 4}
-)
 
 type Dispatcher struct {
 	field       *Field
 	players     []Player
-	rules       Rules
+	rules       *Ruleset
+	currentRules int
 	lastid      int
 	playerQueue chan PlayerReq
 	time        *Time
@@ -44,13 +40,8 @@ type PlayerReq struct {
 	resp chan int
 }
 
-type Rules struct {
-	minPlayers int
-	maxPlayers int
-	canIdle    bool
-}
 
-func NewDispatcher(r Rules) *Dispatcher {
+func NewDispatcher(r *Ruleset) *Dispatcher {
 	return &Dispatcher{rules: r, playerQueue: make(chan PlayerReq),
 		time: NewTime(TIME_TICKS_PER_SEC)}
 }
@@ -113,7 +104,9 @@ func (d *Dispatcher) playerById(Id int) *Player {
 func (d *Dispatcher) Run() {
 	log.Println("dispatcher: starting up")
 	for {
-		log.Println("dispatcher: starting new round, generating field")
+		rules := (*d.rules)[d.currentRules]
+
+		log.Printf("dispatcher: starting new round with rule '%s', generating field", rules.name)
 		// generate field
 		d.field = generateField()
 		d.gameState = d.field.gameState
@@ -130,12 +123,12 @@ func (d *Dispatcher) Run() {
 		// wait for desired amount of players to join
 		log.Println("dispatcher: waiting for players")
 		for {
-			if d.countPlayers() >= d.rules.minPlayers {
+			if d.countPlayers() >= rules.minPlayers {
 				break
 			}
 			d.sendAll(MESSAGE_LEVEL_INFO,
 				fmt.Sprintf("waiting for %d players to join...",
-					d.rules.minPlayers-d.countPlayers()))
+					rules.minPlayers-d.countPlayers()))
 			req := <-d.playerQueue
 			d.handlePlayerReq(req)
 			if req.op == DISP_ATTACH {
@@ -150,15 +143,17 @@ func (d *Dispatcher) Run() {
 		// run game
 		d.runGame()
 		// cleanup
+		d.currentRules = (d.currentRules + 1) % len(*d.rules)
 	}
 }
 
 func (d *Dispatcher) runGame() {
 	// bind players to squads
 	log.Println("dispatcher: starting game")
+	rules := (*d.rules)[d.currentRules]
 	for idx, Player := range d.players {
 		Player.render.HandleGameState(GameState{GAME_RUNNING, -1})
-		if idx < d.rules.maxPlayers {
+		if idx < rules.maxPlayers {
 			log.Printf("dispatcher: player %d now control squad", Player.Id)
 			Player.Orders = placeSquad(d.field, idx, Player.Id)
 			Player.render.AssignSquad(Player.Id, Player.Orders)
@@ -178,7 +173,8 @@ func (d *Dispatcher) runGame() {
 	go d.time.Run()
 	defer d.time.Stop()
 
-	d.sendAll(MESSAGE_LEVEL_INFO, "let the apocalypse begin!")
+	d.sendAll(MESSAGE_LEVEL_INFO, rules.String())
+
 	var countdownMsg = "new round in "
 	var countdown = GAMEOVER_COUNTDOWN
 	log.Println("dispatcher: entering game")
