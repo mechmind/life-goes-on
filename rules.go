@@ -12,7 +12,7 @@ var (
 		"classic": Rules{minPlayers: 2, maxPlayers: 4},
 		"king-of-hill": Rules{minPlayers: 2, maxPlayers: 4, moreBs: 50, versus: true},
 		"crowds": Rules{minPlayers: 2, maxPlayers: 4, moreBs: 100, moreBsP: 40},
-		"skirmish": Rules{minPlayers: 2, maxPlayers: 4, moreZs: 15},
+		"skirmish": Rules{minPlayers: 2, maxPlayers: 4, moreBs: 100, moreZs: 15},
 	}
 )
 
