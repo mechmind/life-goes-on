@@ -49,12 +49,13 @@ type Field struct {
 	// game state
 	gameState chan GameState
 	gameOver  bool
+	versus    bool
 }
 
 func NewField(XSize, YSize int, updates chan *Field) *Field {
 	rng := rand.New(rand.NewSource(time.Now().Unix()))
 	field := &Field{XSize, YSize, make([]Cell, XSize*YSize), nil, nil, updates, nil, nil, rng,
-		make(chan GameState, FIELD_GAME_STATE_BUF), false}
+		make(chan GameState, FIELD_GAME_STATE_BUF), false, false}
 	field.makePassableField()
 	field.computeSlopes()
 	return field
@@ -169,13 +170,38 @@ func (f *Field) checkGameOver() {
 			winstate = GAME_WIN
 		}
 
-		for _, agent := range f.Agents {
-			if squad, ok := agent.(*Squad); ok {
-				f.gameState <- GameState{winstate, squad.Pid}
+		if f.versus {
+			// there can be only one!
+			var squadCount int
+			var lastSquad *Squad
+			var ok bool
+			for _, agent := range f.Agents {
+				if _, ok = agent.(*Squad); ok {
+					lastSquad = agent.(*Squad)
+					squadCount++
+				}
 			}
+
+			if squadCount == 1 {
+				// we have a winner
+				f.gameState <- GameState{winstate, lastSquad.Pid}
+				f.gameState <- GameState{GAME_OVER, -1}
+				f.gameOver = true
+			} else if squadCount == 0 {
+				// everybody lose
+				f.gameState <- GameState{GAME_OVER, -1}
+				f.gameOver = true
+			}
+
+		} else {
+			for _, agent := range f.Agents {
+				if squad, ok := agent.(*Squad); ok {
+					f.gameState <- GameState{winstate, squad.Pid}
+				}
+			}
+			f.gameState <- GameState{GAME_OVER, -1}
+			f.gameOver = true
 		}
-		f.gameState <- GameState{GAME_OVER, -1}
-		f.gameOver = true
 	}
 }
 

@@ -1,8 +1,10 @@
 package main
 
-func generateField() *Field {
+func generateField(rules Rules) *Field {
 	updates := make(chan *Field)
 	field := NewField(FIELD_SIZE, FIELD_SIZE, updates)
+
+	field.versus = rules.versus
 
 	qp := NewQuarterPlan(CellCoord{32, 32})
 	qp.CreateQuarters(field)
@@ -10,8 +12,9 @@ func generateField() *Field {
 	return field
 }
 
-func populateField(field *Field) {
+func populateField(field *Field, rules Rules) {
 	// zeds
+	/*
 	var swarm Agent = &ZedSwarm{}
 	var zed1 = NewZed(field)
 	var zed2 = NewZed(field)
@@ -19,6 +22,7 @@ func populateField(field *Field) {
 	field.PlaceAgent(swarm)
 	field.PlaceUnit(UnitCoord{80, 85}, swarm, zed1)
 	field.PlaceUnit(UnitCoord{85, 80}, swarm, zed2)
+	*/
 
 	// damsels
 	var crowd Agent = &DamselCrowd{}
@@ -38,9 +42,9 @@ func populateField(field *Field) {
 	}
 }
 
-func placeSquad(field *Field, Id, Pid int) chan Order {
+func placeSquad(field *Field, Id, Pid int, rules Rules) chan Order {
 	var Orders = make(chan Order, SQUAD_ORDER_QUEUE_LEN)
-	var squad Agent = &Squad{Orders: Orders, Pid: Pid, FireState: ORDER_FIRE}
+	var squad Agent = &Squad{Orders: Orders, Pid: Pid, FireState: ORDER_FIRE, Versus: rules.versus}
 
 	var sold1 = NewSoldier(field)
 	var sold2 = NewSoldier(field)

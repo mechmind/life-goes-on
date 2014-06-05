@@ -31,6 +31,7 @@ type Squad struct {
 	GrenTo      CellCoord
 	GrenTimeout int
 	Pid         int
+	Versus      bool
 }
 
 func (s *Squad) AttachUnit(u Unit) {
@@ -72,13 +73,22 @@ func (s *Squad) HandleUnit(f *FieldView, u Unit, Coord UnitCoord) {
 		(s.FireState == ORDER_SEMIFIRE && soldier.SemifireCounter == 0) {
 		byDistance := f.UnitsInRange(Coord, soldier.Gunner.FireRange)
 		// check any zeds nearby
-		for _, zed := range byDistance {
-			if _, ok := zed.Unit.(*Zed); ok {
-				if soldier.CanShoot(Coord, zed.Coord) {
+		for _, enemy := range byDistance {
+			if _, ok := enemy.Unit.(*Zed); ok {
+				if soldier.CanShoot(Coord, enemy.Coord) {
 					// shoot that zed
-					soldier.Shoot(Coord, zed.Coord, zed.Unit)
+					soldier.Shoot(Coord, enemy.Coord, enemy.Unit)
 					soldier.SemifireCounter = SOL_SEMIFIRE_TICKS
 					return
+				}
+			} else if s.Versus {
+				if _, ok := enemy.Unit.(*Soldier); ok && enemy.Agent != s {
+					// shoot at enemy soldier
+					if soldier.CanShoot(Coord, enemy.Coord) {
+						soldier.Shoot(Coord, enemy.Coord, enemy.Unit)
+						soldier.SemifireCounter = SOL_SEMIFIRE_TICKS
+						return
+					}
 				}
 			}
 		}

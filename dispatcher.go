@@ -108,7 +108,7 @@ func (d *Dispatcher) Run() {
 
 		log.Printf("dispatcher: starting new round with rule '%s', generating field", rules.name)
 		// generate field
-		d.field = generateField()
+		d.field = generateField(rules)
 		d.gameState = d.field.gameState
 
 		// reset state of existing players
@@ -155,7 +155,7 @@ func (d *Dispatcher) runGame() {
 		Player.render.HandleGameState(GameState{GAME_RUNNING, -1})
 		if idx < rules.maxPlayers {
 			log.Printf("dispatcher: player %d now control squad", Player.Id)
-			Player.Orders = placeSquad(d.field, idx, Player.Id)
+			Player.Orders = placeSquad(d.field, idx, Player.Id, rules)
 			Player.render.AssignSquad(Player.Id, Player.Orders)
 			d.players[idx].Orders = Player.Orders
 		} else {
@@ -165,7 +165,7 @@ func (d *Dispatcher) runGame() {
 	}
 
 	log.Println("dispatcher: populating field")
-	populateField(d.field)
+	populateField(d.field, rules)
 
 	// start game timer
 	d.time.SetTicker(d.field)
