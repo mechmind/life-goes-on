@@ -27,10 +27,11 @@ Multiplayer
 
 The game have built-in server. To start it, pass `-listen ADDR ` option on start. ADDR can be as 
 simple as port definition, i.e. `:4242`. Clients than connect to server using option `-connect IP:PORT`.
+Server can be set up to headless operation using `-standalone` flag.
 
 Game rules
 ==========
 
 There are various game rules that can alternate the gameplay. Admin can add rules using
 `-rule RULENAME` option. Multiple rules can be set and then they will be selected in a round-robin.
-Available rules can be dumped using `-dump-rules` option.
+Available rules can be dumped using `-dump-rules` flag.
