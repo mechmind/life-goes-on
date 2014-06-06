@@ -118,7 +118,7 @@ type LocalRender struct {
 func NewLocalRender() *LocalRender {
 	return &LocalRender{updates: make(chan *Field, 3), stateUpdates: make(chan GameState, 3),
 		squad: -1, assignments: make(chan Assignment, 1), events: make(chan termbox.Event),
-		reset: make(chan struct{}, 1), messages: make(chan Message, 1)}
+		reset: make(chan struct{}, 1), messages: make(chan Message, 3)}
 }
 
 func (lr *LocalRender) HandleUpdate(f *Field) {

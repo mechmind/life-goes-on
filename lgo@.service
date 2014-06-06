@@ -3,5 +3,5 @@ Description=LGO server
 After=network.target
 
 [Service]
-ExecStart=/usr/local/bin/life-goes-on -listen :%i -standalone -log /tmp/lgo-%i.log
+ExecStart=/usr/local/bin/life-goes-on -listen :%i -standalone -log /tmp/lgo-%i.log -rules-file /etc/lgo.rules.d/%i.rules
 User=nobody
