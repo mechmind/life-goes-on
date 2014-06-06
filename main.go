@@ -21,6 +21,7 @@ var listen = flag.String("listen", "", "start server on given address")
 var connect = flag.String("connect", "", "connect to server on giving address")
 var logfile = flag.String("log", "lgo.log", "log to that file")
 var standalone = flag.Bool("standalone", false, "run server as standalone")
+var dumpRules = flag.Bool("dump-rules", false, "dump available rules and exit")
 var ruleFile = flag.String("rule-file", "", "file with rules")
 var ruleSet = &stringSet{}
 
@@ -72,6 +73,15 @@ func main() {
 	}
 	defer f.Close()
 	log.SetOutput(f)
+
+
+	if *dumpRules {
+		for name, rules := range allRules {
+			rules.name = name
+			fmt.Println(rules)
+		}
+		return
+	}
 
 	// panic protection
 	defer logPanic()
