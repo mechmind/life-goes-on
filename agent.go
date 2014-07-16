@@ -354,7 +354,7 @@ func (d *DamselCrowd) HandleUnit(f *FieldView, u Unit, Coord UnitCoord) {
 				ry := ibound(Coord.Cell().Y+int(rand.Int31n(DAMSEL_WANDER_RADIUS))-
 					DAMSEL_WANDER_RADIUS/2, 0, 1024)
 				newCoord := CellCoord{rx, ry}.UnitCenter()
-				if f.HaveLOS(Coord, newCoord) != VS_INVISIBLE {
+				if f.HaveDirectPath(Coord, newCoord) {
 					dam.WanderTarget = newCoord
 				}
 			}

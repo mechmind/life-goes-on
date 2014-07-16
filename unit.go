@@ -239,6 +239,9 @@ func (s *Soldier) RecieveDamage(From int, dmg float32) {
 func (s *Soldier) Shoot(src, dest UnitCoord, victim Unit) {
 	// check misshots
 	tid, newDest := s.field.TraceShot(src, dest, victim.GetID())
+	if tid == -1 {
+		return
+	}
 	// calculate hit probability
 	dist := src.Distance(newDest)
 	if dist > SOL_ACC_DECAY_START {

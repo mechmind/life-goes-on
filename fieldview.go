@@ -49,6 +49,10 @@ func (f *FieldView) HaveLOS(From, To UnitCoord) int {
 	return f.field.HaveLOS(From, To)
 }
 
+func (f *FieldView) HaveDirectPath(From, To UnitCoord) bool {
+	return f.field.HaveDirectPath(From, To)
+}
+
 func (f *FieldView) ThrowGren(From, To UnitCoord) {
 	f.field.ThrowGren(From, To)
 }

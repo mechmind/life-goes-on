@@ -112,7 +112,7 @@ func (f *Field) Tick(tick int64) {
 			// BOOM
 			f.Grens[idx].Booming = 1 // for animation
 			for _, u := range view.UnitsInRange(gren.To, SOL_GREN_RADIUS) {
-				if f.HaveLOS(u.Coord, gren.To) != VS_INVISIBLE {
+				if f.HaveDirectPath(u.Coord, gren.To) {
 					u.Unit.RecieveDamage(-1, SOL_GREN_DAMAGE)
 				}
 			}
@@ -288,7 +288,7 @@ func (f *Field) TraceShot(From, To UnitCoord, tid int) (atid int, atcoord UnitCo
 	for {
 		// always check next and current cell passability because we can advance 2 cells
 		// on one step
-		if f.CellAt(current.Cell()).Passable == false {
+		if f.CellAt(current.Cell()).Opaque == true {
 			return -1, current
 		}
 
@@ -355,6 +355,36 @@ func (f *Field) HaveLOS(From, To UnitCoord) int {
 				return VS_ON_HORIZON
 			}
 			return VS_INVISIBLE
+		}
+
+		if current.Distance(To) < 1 {
+			current = To
+		} else {
+			current = current.AddCoord(toward)
+		}
+	}
+}
+
+func (f *Field) HaveDirectPath(From, To UnitCoord) bool {
+	toward := NormTowardCoord(From, To)
+
+	current := From
+	for {
+		// always check next and current cell visibility because we can advance 2 cells
+		// on one step
+
+		currCoord := current.Cell()
+		if !f.CellAt(currCoord).Passable  {
+			return false
+		}
+
+		if current == To {
+			return true
+		}
+
+		nextCell := From.Cell().AddCoord(NextCellCoord(From, toward)).Bound(0, 0, 1024, 1024)
+		if !f.CellAt(nextCell).Passable {
+			return false
 		}
 
 		if current.Distance(To) < 1 {
