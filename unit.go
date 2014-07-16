@@ -225,7 +225,7 @@ func (s *Soldier) MoveToward(src, dest UnitCoord) (UnitCoord, bool) {
 }
 
 func (s *Soldier) CanShoot(src, dest UnitCoord) bool {
-	return s.Gunner.CanShoot(src, dest) && s.field.HaveLOS(src, dest)
+	return s.Gunner.CanShoot(src, dest) && s.field.HaveLOS(src, dest) != VS_INVISIBLE
 }
 
 func (s *Soldier) RecieveDamage(From int, dmg float32) {

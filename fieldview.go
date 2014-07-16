@@ -45,7 +45,7 @@ func (f *FieldView) FindPath(From, To CellCoord) Path {
 	return f.field.FindPath(From, To)
 }
 
-func (f *FieldView) HaveLOS(From, To UnitCoord) bool {
+func (f *FieldView) HaveLOS(From, To UnitCoord) int {
 	return f.field.HaveLOS(From, To)
 }
 

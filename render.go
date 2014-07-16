@@ -31,6 +31,8 @@ const (
 
 	TUI_WALL_CHAR      = '#'
 	TUI_FLAT_CHAR      = ' '
+	TUI_BUSH_CHAR      = '"'
+	TUI_BARR_CHAR      = 'X'
 	TUI_OFFSCREEN_CHAR = TUI_WALL_CHAR
 
 	TUI_POS_STEP = 5
@@ -326,11 +328,19 @@ func (lr *LocalRender) drawField(f *Field, pos CellCoord, sv squadView, gameStat
 				termbox.SetCell(screenPos.X, screenPos.Y, TUI_OFFSCREEN_CHAR,
 					TUI_DEFAULT_FG, TUI_DEFAULT_BG)
 			} else {
-				if f.CellAt(tileCell).Passable {
+				cell := f.CellAt(tileCell)
+				switch cell.Type {
+				case OBJECT_EMPTY:
 					termbox.SetCell(screenPos.X, screenPos.Y, TUI_FLAT_CHAR,
 						TUI_DEFAULT_FG, TUI_DEFAULT_BG)
-				} else {
+				case OBJECT_WALL:
 					termbox.SetCell(screenPos.X, screenPos.Y, TUI_WALL_CHAR,
+						TUI_DEFAULT_FG, TUI_DEFAULT_BG)
+				case OBJECT_BUSH:
+					termbox.SetCell(screenPos.X, screenPos.Y, TUI_BUSH_CHAR,
+						TUI_DEFAULT_FG, TUI_DEFAULT_BG)
+				case OBJECT_BARRICADE:
+					termbox.SetCell(screenPos.X, screenPos.Y, TUI_BARR_CHAR,
 						TUI_DEFAULT_FG, TUI_DEFAULT_BG)
 				}
 			}
@@ -375,7 +385,7 @@ func (lr *LocalRender) drawField(f *Field, pos CellCoord, sv squadView, gameStat
 					screenPos := cellCoord.AddCoord(pos.Mult(-1))
 					if CheckCellCoordBounds(cellCoord, pos, upperBound) &&
 						center.Distance(cellCoord.UnitCenter()) < SOL_GREN_RADIUS &&
-						f.HaveLOS(center, cellCoord.UnitCenter()) {
+						f.HaveLOS(center, cellCoord.UnitCenter()) != VS_INVISIBLE {
 						// in a range and visible
 						boomingView := boomingColors[gren.Booming]
 						termbox.SetCell(screenPos.X, screenPos.Y,

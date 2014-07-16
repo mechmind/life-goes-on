@@ -24,6 +24,12 @@ const (
 	PS_IMPASSABLE
 )
 
+const (
+	VS_VISIBLE = iota
+	VS_ON_HORIZON
+	VS_INVISIBLE
+)
+
 var nopAgent NopAgent
 
 var fieldBackbuffer = make(chan *Field, FIELD_BACKBUFFER_SIZE)
@@ -106,7 +112,7 @@ func (f *Field) Tick(tick int64) {
 			// BOOM
 			f.Grens[idx].Booming = 1 // for animation
 			for _, u := range view.UnitsInRange(gren.To, SOL_GREN_RADIUS) {
-				if f.HaveLOS(u.Coord, gren.To) {
+				if f.HaveLOS(u.Coord, gren.To) != VS_INVISIBLE {
 					u.Unit.RecieveDamage(-1, SOL_GREN_DAMAGE)
 				}
 			}
@@ -319,24 +325,31 @@ func (f *Field) TraceShot(From, To UnitCoord, tid int) (atid int, atcoord UnitCo
 	//return tid, to
 }
 
-func (f *Field) HaveLOS(From, To UnitCoord) bool {
+func (f *Field) HaveLOS(From, To UnitCoord) int {
 	toward := NormTowardCoord(From, To)
+	toCell := To.Cell()
+	fromCell := From.Cell()
 
 	current := From
 	for {
 		// always check next and current cell passability because we can advance 2 cells
 		// on one step
-		if f.CellAt(current.Cell()).Passable == false {
-			return false
+		currCoord:= current.Cell()
+		// FIXME: hack for those who hiding on edge of bushes
+		if f.CellAt(currCoord).Opaque == true && currCoord != fromCell {
+			return VS_ON_HORIZON
 		}
 
 		if current == To {
-			return true
+			return VS_VISIBLE
 		}
 
 		nextCell := From.Cell().AddCoord(NextCellCoord(From, toward)).Bound(0, 0, 1024, 1024)
-		if f.CellAt(nextCell).Passable == false {
-			return false
+		if f.CellAt(nextCell).Opaque == true {
+			if nextCell == toCell {
+				return VS_ON_HORIZON
+			}
+			return VS_INVISIBLE
 		}
 
 		if current.Distance(To) < 1 {
@@ -394,9 +407,14 @@ func (f *Field) FindPath(From, To CellCoord) Path {
 
 // terrain api
 // makePassableField makes everything but border passable
+func (f *Field) PlaceObject(coord CellCoord, o Object) {
+	f.CellAt(coord).Object = o
+}
+
 func (f *Field) makePassableField() {
 	for i := 1; i < f.XSize-1; i++ {
 		for j := 1; j < f.YSize-1; j++ {
+			// empty cells are passable and now there are only of that kind
 			f.CellAt(CellCoord{i, j}).Passable = true
 		}
 	}
@@ -438,7 +456,17 @@ type UnitPresence struct {
 type Cell struct {
 	Elevation int16
 	Slopes    uint8
-	Passable  bool
+	Object
+}
+
+func (c *Cell) RecieveDamage(f *Field, damage float32) {
+	c.Health -= damage
+	if c.Type == OBJECT_BUSH || c.Type == OBJECT_BARRICADE {
+		if c.Health <= 0 {
+			// destroy object
+			c.Object = referenceObjects[OBJECT_EMPTY]
+		}
+	}
 }
 
 type FlyingGren struct {

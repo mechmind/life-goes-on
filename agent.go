@@ -60,7 +60,7 @@ func (s *Squad) HandleUnit(f *FieldView, u Unit, Coord UnitCoord) {
 
 	if s.GrenTo != (CellCoord{0, 0}) && s.GrenTimeout == 0 {
 		GrenTo := s.GrenTo.UnitCenter()
-		if Coord.Distance(GrenTo) < SOL_GREN_RANGE && f.HaveLOS(Coord, GrenTo) {
+		if Coord.Distance(GrenTo) < SOL_GREN_RANGE && f.HaveLOS(Coord, GrenTo) != VS_INVISIBLE {
 			// throw gren
 			s.GrenTo = CellCoord{0, 0}
 			f.ThrowGren(Coord, GrenTo)
@@ -295,7 +295,7 @@ func (z *ZedSwarm) HandleUnit(f *FieldView, u Unit, Coord UnitCoord) {
 		}
 	}
 
-	if f.HaveLOS(Coord, Target) {
+	if f.HaveLOS(Coord, Target) != VS_INVISIBLE {
 		// forget about path, rush toward target
 		zed.path = nil
 		zed.MoveToward(Coord, Target)
@@ -354,7 +354,7 @@ func (d *DamselCrowd) HandleUnit(f *FieldView, u Unit, Coord UnitCoord) {
 				ry := ibound(Coord.Cell().Y+int(rand.Int31n(DAMSEL_WANDER_RADIUS))-
 					DAMSEL_WANDER_RADIUS/2, 0, 1024)
 				newCoord := CellCoord{rx, ry}.UnitCenter()
-				if f.HaveLOS(Coord, newCoord) {
+				if f.HaveLOS(Coord, newCoord) != VS_INVISIBLE {
 					dam.WanderTarget = newCoord
 				}
 			}

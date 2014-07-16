@@ -29,6 +29,18 @@ func (qp *QuarterPlan) CreateQuarters(f *Field) {
 			// roll dices for house in that block
 			if f.rng.Int31n(100) < QUARTER_PROBABILITY {
 				qp.MakeHouse(f, CellCoord{i, j})
+			} else {
+				// FIXME: debug
+				// make a bush line
+				xLow := i*QUARTER_HOUSE_SIZE + QUARTER_PADDING
+				yLow := j*QUARTER_HOUSE_SIZE + QUARTER_PADDING
+				for xx := xLow; xx < xLow + 15; xx++ {
+					f.CellAt(CellCoord{xx, yLow}).Object = referenceObjects[OBJECT_BUSH]
+				}
+				// make a barricade
+				for yy := yLow+1; yy < yLow + 15; yy++ {
+					f.CellAt(CellCoord{xLow, yy}).Object = referenceObjects[OBJECT_BARRICADE]
+				}
 			}
 		}
 	}
@@ -54,12 +66,12 @@ func (qp *QuarterPlan) MakeHouse(f *Field, Coord CellCoord) {
 	yHig := Coord.Y*QUARTER_HOUSE_SIZE + (corner.Y+size.Y)*QUARTER_BLOCK_SIZE + QUARTER_PADDING
 
 	for i := xLow; i <= xHig; i++ {
-		f.CellAt(CellCoord{i, yLow}).Passable = false
-		f.CellAt(CellCoord{i, yHig}).Passable = false
+		f.CellAt(CellCoord{i, yLow}).Object = referenceObjects[OBJECT_WALL]
+		f.CellAt(CellCoord{i, yHig}).Object = referenceObjects[OBJECT_WALL]
 	}
 	for j := yLow; j <= yHig; j++ {
-		f.CellAt(CellCoord{xLow, j}).Passable = false
-		f.CellAt(CellCoord{xHig, j}).Passable = false
+		f.CellAt(CellCoord{xLow, j}).Object = referenceObjects[OBJECT_WALL]
+		f.CellAt(CellCoord{xHig, j}).Object = referenceObjects[OBJECT_WALL]
 	}
 	// make main door
 	hasBackDoor := f.rng.Intn(100) < QUARTER_BACKDOOR_PROBABILITY
@@ -69,15 +81,15 @@ func (qp *QuarterPlan) MakeHouse(f *Field, Coord CellCoord) {
 		bdoorPos := f.rng.Intn((xHig-xLow-1)/2)*2 + xLow + 1
 		if f.rng.Int31n(1) == 0 {
 			// bottom wall
-			f.CellAt(CellCoord{doorPos, yLow}).Passable = true
+			f.CellAt(CellCoord{doorPos, yLow}).Object = referenceObjects[OBJECT_EMPTY]
 			if hasBackDoor {
-				f.CellAt(CellCoord{bdoorPos, yHig}).Passable = true
+				f.CellAt(CellCoord{bdoorPos, yHig}).Object = referenceObjects[OBJECT_EMPTY]
 			}
 		} else {
 			// top wall
-			f.CellAt(CellCoord{doorPos, yHig}).Passable = true
+			f.CellAt(CellCoord{doorPos, yHig}).Object = referenceObjects[OBJECT_EMPTY]
 			if hasBackDoor {
-				f.CellAt(CellCoord{bdoorPos, yLow}).Passable = true
+				f.CellAt(CellCoord{bdoorPos, yLow}).Object = referenceObjects[OBJECT_EMPTY]
 			}
 		}
 	} else {
@@ -86,15 +98,15 @@ func (qp *QuarterPlan) MakeHouse(f *Field, Coord CellCoord) {
 		bdoorPos := f.rng.Intn((yHig-xLow-1)/2)*2 + yLow + 1
 		if f.rng.Int31n(1) == 0 {
 			// left wall
-			f.CellAt(CellCoord{xLow, doorPos}).Passable = true
+			f.CellAt(CellCoord{xLow, doorPos}).Object = referenceObjects[OBJECT_EMPTY]
 			if hasBackDoor {
-				f.CellAt(CellCoord{xHig, bdoorPos}).Passable = true
+				f.CellAt(CellCoord{xHig, bdoorPos}).Object = referenceObjects[OBJECT_EMPTY]
 			}
 		} else {
 			// right wall
-			f.CellAt(CellCoord{xHig, doorPos}).Passable = true
+			f.CellAt(CellCoord{xHig, doorPos}).Object = referenceObjects[OBJECT_EMPTY]
 			if hasBackDoor {
-				f.CellAt(CellCoord{xLow, bdoorPos}).Passable = true
+				f.CellAt(CellCoord{xLow, bdoorPos}).Object = referenceObjects[OBJECT_EMPTY]
 			}
 		}
 	}
@@ -107,14 +119,14 @@ func (qp *QuarterPlan) MakeHouse(f *Field, Coord CellCoord) {
 		for j = yLow + 1; j <= yHig; j++ {
 			cell := f.CellAt(CellCoord{wallX, j})
 			if cell.Passable {
-				cell.Passable = false
+				cell.Object = referenceObjects[OBJECT_WALL]
 			} else {
 				break
 			}
 		}
 		// make a door in that wall
 		doorPos := f.rng.Intn((j-yLow)/2)*2 + yLow + 1
-		f.CellAt(CellCoord{wallX, doorPos}).Passable = true
+		f.CellAt(CellCoord{wallX, doorPos}).Object = referenceObjects[OBJECT_EMPTY]
 	}
 
 	if size.Y > 2 && f.rng.Intn(100) < QUARTER_INTWALL_PROBABILITY {
@@ -124,14 +136,14 @@ func (qp *QuarterPlan) MakeHouse(f *Field, Coord CellCoord) {
 		for i = xLow + 1; i <= xHig; i++ {
 			cell := f.CellAt(CellCoord{i, wallY})
 			if cell.Passable {
-				cell.Passable = false
+				cell.Object = referenceObjects[OBJECT_WALL]
 			} else {
 				break
 			}
 		}
 		// make a door in that wall
 		doorPos := f.rng.Intn((i-xLow)/2)*2 + xLow + 1
-		f.CellAt(CellCoord{doorPos, wallY}).Passable = true
+		f.CellAt(CellCoord{doorPos, wallY}).Object = referenceObjects[OBJECT_EMPTY]
 	}
 
 }
