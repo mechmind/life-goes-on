@@ -28,6 +28,7 @@ const (
 	TUI_FASTZED_FG   = termbox.ColorGreen | termbox.AttrBold
 
 	TUI_CORPSE_BG = termbox.ColorRed
+	TUI_CORPSE_FG = termbox.ColorBlack
 
 	TUI_WALL_CHAR      = '#'
 	TUI_FLAT_CHAR      = ' '
@@ -530,8 +531,8 @@ func getUnitView(f *Field, pid int, u Unit) (ch rune, fg, bg termbox.Attribute) 
 		}
 	case *Corpse:
 		corpse := u.(*Corpse)
-		ch, fg, _ := getUnitView(f, pid, corpse.Unit)
-		return ch, fg, TUI_CORPSE_BG
+		ch, _, _ := getUnitView(f, pid, corpse.Unit)
+		return ch, TUI_CORPSE_FG, TUI_CORPSE_BG
 	}
 	return ' ', TUI_DEFAULT_FG, TUI_DEFAULT_BG
 }
