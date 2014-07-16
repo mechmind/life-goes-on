@@ -332,12 +332,17 @@ func (f *Field) HaveLOS(From, To UnitCoord) int {
 
 	current := From
 	for {
-		// always check next and current cell passability because we can advance 2 cells
+		// always check next and current cell visibility because we can advance 2 cells
 		// on one step
-		currCoord:= current.Cell()
-		// FIXME: hack for those who hiding on edge of bushes
-		if f.CellAt(currCoord).Opaque == true && currCoord != fromCell {
-			return VS_ON_HORIZON
+
+		currCoord := current.Cell()
+		if f.CellAt(currCoord).Opaque == true {
+			if currCoord == toCell {
+				return VS_ON_HORIZON
+			// FIXME: hack for those who hiding on edge of bushes
+			} else if currCoord != fromCell {
+				return VS_INVISIBLE
+			}
 		}
 
 		if current == To {
