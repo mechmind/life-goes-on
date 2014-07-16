@@ -25,6 +25,8 @@ var dumpRules = flag.Bool("dump-rules", false, "dump available rules and exit")
 var ruleFile = flag.String("rule-file", "", "file with rules")
 var ruleSet = &stringSet{}
 
+var debugAddr = flag.String("debug-addr", "127.0.0.1:8081", "Address to bind http debug screen to")
+
 func init() {
 	flag.Var(ruleSet, "rule", "game rule(s) to use")
 }
