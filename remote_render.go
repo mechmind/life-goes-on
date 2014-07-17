@@ -35,10 +35,13 @@ func CreateRemoteRender(conn *net.TCPConn) *RemoteRender {
 }
 
 func (rr *RemoteRender) HandleUpdate(f *Field) {
+	/*
 	select {
 	case rr.updates <- f:
 	default:
 	}
+	*/
+	rr.updates <-f
 }
 
 func (rr *RemoteRender) HandleGameState(s GameState) {
@@ -65,8 +68,8 @@ func (rr *RemoteRender) Spectate() {
 
 func (rr *RemoteRender) Reset() {
 	rr.mapSent = false
-	confirm := make(chan struct{})
-	rr.reset <- confirm
+	confirm := make(chan struct{}, 1)
+	rr.reset <-confirm
 	<-confirm
 }
 

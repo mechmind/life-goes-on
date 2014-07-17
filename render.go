@@ -386,7 +386,7 @@ func (lr *LocalRender) drawField(f *Field, pos CellCoord, sv squadView, gameStat
 					screenPos := cellCoord.AddCoord(pos.Mult(-1))
 					if CheckCellCoordBounds(cellCoord, pos, upperBound) &&
 						center.Distance(cellCoord.UnitCenter()) < SOL_GREN_RADIUS &&
-						f.HaveLOS(center, cellCoord.UnitCenter()) != VS_INVISIBLE {
+						f.HaveDirectPath(center, cellCoord.UnitCenter()) {
 						// in a range and visible
 						boomingView := boomingColors[gren.Booming]
 						termbox.SetCell(screenPos.X, screenPos.Y,

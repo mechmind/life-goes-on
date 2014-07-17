@@ -26,6 +26,7 @@ var ruleFile = flag.String("rule-file", "", "file with rules")
 var ruleSet = &stringSet{}
 
 var debugAddr = flag.String("debug-addr", "127.0.0.1:8081", "Address to bind http debug screen to")
+var debug = flag.Bool("debug", false, "Enable debug")
 
 func init() {
 	flag.Var(ruleSet, "rule", "game rule(s) to use")
@@ -153,6 +154,10 @@ func main() {
 			}
 			go server.Serve()
 		}
+	}
+
+	if *debug {
+		go runDebugAt(*debugAddr)
 	}
 
 	if *listen != "" && *standalone {
