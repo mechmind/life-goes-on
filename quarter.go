@@ -30,6 +30,7 @@ func (qp *QuarterPlan) CreateQuarters(f *Field) {
 			if f.rng.Int31n(100) < QUARTER_PROBABILITY {
 				qp.MakeHouse(f, CellCoord{i, j})
 			} else {
+				continue
 				// FIXME: debug
 				// make a bush line
 				xLow := i*QUARTER_HOUSE_SIZE + QUARTER_PADDING
