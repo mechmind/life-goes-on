@@ -23,7 +23,7 @@ type RemoteRender struct {
 	conn                *net.TCPConn
 	readErrs, writeErrs chan error
 	mapSent             bool
-	reset               chan struct{}
+	reset               chan chan struct{}
 }
 
 func CreateRemoteRender(conn *net.TCPConn) *RemoteRender {
@@ -31,7 +31,7 @@ func CreateRemoteRender(conn *net.TCPConn) *RemoteRender {
 		squad: -1, assignments: make(chan Assignment, 1),
 		localUpdates: make(chan *Field, 3), localStateUpdates: make(chan GameState, 3),
 		conn: conn, readErrs: make(chan error), writeErrs: make(chan error),
-		reset: make(chan struct{}, 1), messages: make(chan Message, 3)}
+		reset: make(chan chan struct{}, 1), messages: make(chan Message, 3)}
 }
 
 func (rr *RemoteRender) HandleUpdate(f *Field) {
@@ -65,7 +65,9 @@ func (rr *RemoteRender) Spectate() {
 
 func (rr *RemoteRender) Reset() {
 	rr.mapSent = false
-	rr.reset <- struct{}{}
+	confirm := make(chan struct{})
+	rr.reset <- confirm
+	<-confirm
 }
 
 func (rr *RemoteRender) Run() error {
@@ -149,8 +151,9 @@ func (rr *RemoteRender) runWriter() {
 				return
 			}
 
-		case <-rr.reset:
+		case confirm := <-rr.reset:
 			err := encoder.Encode(UpdateBulk{Reset: true})
+			confirm <- struct{}{}
 			if err != nil {
 				rr.writeErrs <- err
 				return
